@@ -135,6 +135,7 @@ namespace itk
                 {
                     TImage::Pointer imageA = TImage::New();
                     imageA->CopyInformation(output);
+                    imageA->SetRegions(output->GetRequestedRegion());
                     imageA->Allocate();
                     InterpolateAlong(a, imageA);
                     perAxisInterpolates.push_back(imageA);
