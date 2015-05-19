@@ -68,6 +68,7 @@ void MorphologicalContourInterpolator<TImage>::DetermineSliceOrientations()
   ImageRegionConstIteratorWithIndex<TImage> it(input, region);
 
   OrientationType orientations = OrientationType();
+  orientations.Fill(false);
 
   while (!it.IsAtEnd())
   {
@@ -146,6 +147,8 @@ void MorphologicalContourInterpolator<TImage>::GenerateData()
     this->DetermineSliceOrientations();
 
     OrientationType aggregate = OrientationType();
+    aggregate.Fill(false);
+
     if (this->m_Label == 0)
     {
       for (OrientationsType::iterator it = m_Orientations.begin(); it != m_Orientations.end(); ++it)
