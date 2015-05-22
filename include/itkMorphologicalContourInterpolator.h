@@ -60,7 +60,9 @@ protected:
   MorphologicalContourInterpolator()
     :m_Label(0),
     m_Axis(-1)
-  { }
+  {
+    m_LabeledSlices.resize(TImage::ImageDimension); //initialize with empty sets
+  }
   ~MorphologicalContourInterpolator(){}
 
   typename TImage::PixelType m_Label;
@@ -97,6 +99,9 @@ protected:
   typedef itksys::hash_map<typename TImage::PixelType, SliceSetType > LabeledSlicesType;
   std::vector<LabeledSlicesType> m_LabeledSlices; //one for each axis
 
+  void SetLabeledSliceIndices(unsigned int axis, std::vector<typename TImage::IndexValueType> indices);
+  void SetLabeledSliceIndices(unsigned int axis, SliceSetType indices);
+  SliceSetType GetLabeledSliceIndices(unsigned int axis);
 
   //assumes both valid region and valid index
   void ExpandRegion(typename TImage::RegionType &region, typename TImage::IndexType index);
