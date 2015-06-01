@@ -6,48 +6,30 @@ set( MorphologicalContourInterpolationTests
 
 CreateTestDriver( MorphologicalContourInterpolation "${MorphologicalContourInterpolation-Test_LIBRARIES}" "${MorphologicalContourInterpolationTests}" )
 
-itk_add_test( NAME itkMorphologicalContourInterpolationTest_hippocampus_exvivo
+function(JustInputTest ImageName Ext)
+itk_add_test( NAME itkMorphologicalContourInterpolationTest_${ImageName}
   COMMAND MorphologicalContourInterpolationTestDriver
   itkMorphologicalContourInterpolationTest
-    DATA{Input/105769moving_resliced_to_fixedhz2_segmentation.nii.gz}
-    ${ITK_TEST_OUTPUT_DIR}/105769moving_resliced_to_fixedhz2_segmentation_interpolated.nii.gz
+    DATA{Input/${ImageName}.${Ext}}
+    ${ITK_TEST_OUTPUT_DIR}/${ImageName}_interpolated.${Ext}
     )
+endfunction()
 
-itk_add_test( NAME itkMorphologicalContourInterpolationTest_hippocampus_invivo
-  COMMAND MorphologicalContourInterpolationTestDriver
-  itkMorphologicalContourInterpolationTest
-    DATA{Input/105769fixed_segmentation.nii.gz}
-    ${ITK_TEST_OUTPUT_DIR}/105769fixed_segmentation_interpolated.nii.gz
-    )
+# Handcrafted tests
+JustInputTest(SimplestOneToOne nrrd)
+JustInputTest(OneToOne nrrd)
+JustInputTest(OneToThree nrrd)
+JustInputTest(DoubleTwoLabelBranching nrrd)
+JustInputTest(TwoAxisDoubleTwoLabelBranchingConflict nrrd)
+JustInputTest(ThreeAxisFourLabelConflict nrrd)
+JustInputTest(AccidentalMiddleSliceSegmentation nrrd)
+JustInputTest(FullEndSevenLabels nrrd)
+JustInputTest(ManyToMany nrrd)
 
-
-itk_add_test( NAME itkMorphologicalContourInterpolationTest_amygdala_exvivoLF
-  COMMAND MorphologicalContourInterpolationTestDriver
-  itkMorphologicalContourInterpolationTest
-    DATA{Input/64816L_amygdala_fin.nii.gz}
-    ${ITK_TEST_OUTPUT_DIR}/4816L_amygdala_fin_interpolated.nii.gz
-    )
-
-
-itk_add_test( NAME itkMorphologicalContourInterpolationTest_amygdala_exvivoLI
-  COMMAND MorphologicalContourInterpolationTestDriver
-  itkMorphologicalContourInterpolationTest
-    DATA{Input/64816L_amygdala_int.nii.gz}
-    ${ITK_TEST_OUTPUT_DIR}/64816L_amygdala_int_interpolated.nii.gz
-    )
-
-
-itk_add_test( NAME itkMorphologicalContourInterpolationTest_amygdala_exvivoRF
-  COMMAND MorphologicalContourInterpolationTestDriver
-  itkMorphologicalContourInterpolationTest
-    DATA{Input/65239R_amygdala_fin.nii.gz}
-    ${ITK_TEST_OUTPUT_DIR}/65239R_amygdala_fin_interpolated.nii.gz
-    )
-
-
-itk_add_test( NAME itkMorphologicalContourInterpolationTest_amygdala_exvivoRI
-  COMMAND MorphologicalContourInterpolationTestDriver
-  itkMorphologicalContourInterpolationTest
-    DATA{Input/65239R_amygdala_int.nii.gz}
-    ${ITK_TEST_OUTPUT_DIR}/65239R_amygdala_int_interpolated.nii.gz
-    )
+# Paul's tests
+JustInputTest(105769moving_resliced_to_fixedhz2_segmentation nii.gz)
+JustInputTest(105769fixed_segmentation nii.gz)
+JustInputTest(64816L_amygdala_fin nii.gz)
+JustInputTest(64816L_amygdala_int nii.gz)
+JustInputTest(65239R_amygdala_fin nii.gz)
+JustInputTest(65239R_amygdala_int nii.gz)
