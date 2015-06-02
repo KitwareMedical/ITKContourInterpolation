@@ -25,6 +25,10 @@
 #include <utility>
 #include <algorithm>
 
+//DEBUG
+#include <iostream>
+#include "itkImageFileWriter.h"
+
 namespace itk
 {
 template<class TImage>
@@ -88,24 +92,12 @@ void MorphologicalContourInterpolator<TImage>::DetermineSliceOrientations()
   m_Orientations.clear();
 
   typename TImage::RegionType region = m_Output->GetRequestedRegion();
-  typename TImage::RegionType largestPossibleRegion = m_Input->GetLargestPossibleRegion();
-  for (unsigned int a = 0; a < TImage::ImageDimension; ++a)
-    {
-    if (region.GetIndex(a) < largestPossibleRegion.GetIndex(a) + 1)
-      {
-      region.SetIndex(a, largestPossibleRegion.GetIndex(a) + 1);
-      }
-    if (region.GetIndex(a) + region.GetSize(a) > largestPossibleRegion.GetIndex(a) + largestPossibleRegion.GetSize(a) - 1)
-      {
-      region.SetSize(a, largestPossibleRegion.GetIndex(a) + largestPossibleRegion.GetSize(a) - 1 - region.GetIndex(a));
-      }
-    }
   ImageRegionConstIteratorWithIndex<TImage> it(m_Input, region);
 
   OrientationType orientations = OrientationType();
   orientations.Fill(false);
 
-  while (!it.IsAtEnd())
+  for (; !it.IsAtEnd(); ++it)
     {
     typename TImage::IndexType indPrev, indNext;
     typename const TImage::IndexType ind = it.GetIndex();
@@ -135,8 +127,16 @@ void MorphologicalContourInterpolator<TImage>::DetermineSliceOrientations()
         indPrev[a]--;
         indNext = ind;
         indNext[a]++;
-        const typename TImage::PixelType prev = m_Input->GetPixel(indPrev);
-        const typename TImage::PixelType next = m_Input->GetPixel(indNext);
+        typename TImage::PixelType prev = 0;
+        if (region.IsInside(indPrev))
+          {
+          prev = m_Input->GetPixel(indPrev);
+          }
+        typename TImage::PixelType next = 0;
+        if (region.IsInside(indNext))
+          {
+          next = m_Input->GetPixel(indNext);
+          }
         if (prev == 0 && next == 0)
           {
           axis = a;
@@ -155,21 +155,6 @@ void MorphologicalContourInterpolator<TImage>::DetermineSliceOrientations()
           m_LabeledSlices[axis][val].insert(ind[axis]);
           }
         }
-      }
-    ++it;
-    }
-
-  //widen bounding boxes by 1
-  region = m_Output->GetRequestedRegion();
-  for (BoundingBoxesType::iterator it = m_BoundingBoxes.begin(); it != m_BoundingBoxes.end(); ++it)
-    {
-    for (unsigned int a = 0; a < TImage::ImageDimension; ++a)
-      {
-      if (it->second.GetIndex(a) - 1 <= region.GetIndex(a))
-        it->second.SetIndex(a, it->second.GetIndex(a) - 1);
-      if (it->second.GetIndex(a) + it->second.GetSize(a) + 1
-        <= region.GetIndex(a) + region.GetSize(a))
-        it->second.SetSize(a, it->second.GetSize(a) + 1);
       }
     }
 }
@@ -210,11 +195,31 @@ typename TImage::Pointer MorphologicalContourInterpolator<TImage>::RegionedConne
   m_Binarizer->SetLowerThreshold(label);
   m_Binarizer->SetUpperThreshold(label);
   m_Binarizer->SetInput(m_Input);
-  m_Binarizer->GetOutput()->SetRequestedRegion(region);
+  //m_Binarizer->GetOutput()->SetRequestedRegion(region);
+  //m_Binarizer->GetOutput()->Modified();
   m_ConnectedComponents->SetInput(m_Binarizer->GetOutput());
   m_ConnectedComponents->SetFullyConnected(true);
+  m_ConnectedComponents->GetOutput()->SetRequestedRegion(region);
   m_ConnectedComponents->Update();
+  objectCount = m_ConnectedComponents->GetObjectCount();
   return m_ConnectedComponents->GetOutput();
+}
+
+template<class TImage>
+void WriteDebug(typename TImage::Pointer out, const char *filename)
+{
+  typedef ImageFileWriter<TImage> WriterType;
+  WriterType::Pointer w = WriterType::New();
+  w->SetInput(out);
+  w->SetFileName(filename);
+  try
+    {
+    w->Update();
+    }
+  catch (itk::ExceptionObject & error)
+    {
+    std::cerr << "Error: " << error << std::endl;
+    }
 }
 
 template< class TImage>
@@ -253,9 +258,9 @@ typename TImage::IndexValueType i, typename TImage::IndexValueType j)
   ImageRegionIterator<BoolImageType> itr(eqResult, rr);
   while (!itr.IsAtEnd())
     {
-    bool eq = (iti.Value() == itj.Value()); //are the pixels equal?
+    bool eq = (iti.Value() == itj.Value() && iti.Value() != 0); //are the pixels equal and non-zero?
     itr.Set(eq);
-    if (eq)
+    if (eq) //exclude background label
       {
       overlaps.insert(iti.Value());
       }
@@ -264,7 +269,7 @@ typename TImage::IndexValueType i, typename TImage::IndexValueType j)
     ++itj;
     ++itr;
     }
-
+  WriteDebug<BoolImageType>(eqResult,"C:\\Temp\\eqResult.mha");
   //for each label with overlaps determine inter-slice region correspondences
   for (LabelSetType::iterator it = overlaps.begin(); it != overlaps.end(); ++it)
     {
@@ -284,7 +289,8 @@ typename TImage::IndexValueType i, typename TImage::IndexValueType j)
     IdentifierType iCount, jCount;
     typename TImage::Pointer iconn = this->RegionedConnectedComponents(ri, *it, iCount);
     typename TImage::Pointer jconn = this->RegionedConnectedComponents(rj, *it, jCount);
-
+    WriteDebug<TImage>(iconn, "C:\\Temp\\iconn.nrrd");
+    WriteDebug<TImage>(jconn, "C:\\Temp\\jconn.nrrd");
     //go through comparison image and create correspondence pairs
     typedef std::set<std::pair<typename TImage::PixelType, typename TImage::PixelType> > PairSet;
     PairSet pairs;
@@ -296,8 +302,11 @@ typename TImage::IndexValueType i, typename TImage::IndexValueType j)
       if (itr.Value())
         {
         pairs.insert(std::make_pair(iti.Value(), itj.Value()));
+        std::cout << itr.GetIndex() << std::endl;
         }
-      ++iti; ++itj; ++itr; //next pixel
+      ++iti;
+      ++itj;
+      ++itr; //next pixel
       }
 
     typedef std::map<typename TImage::PixelType, IdentifierType> CountMap;
@@ -361,7 +370,7 @@ typename TImage::IndexValueType i, typename TImage::IndexValueType j)
 
       if (iCounts[p->first] == 1) //1-to-N
         {
-        for (PairSet::iterator rest = p; p != pairs.end(); ++p)
+        for (PairSet::iterator rest = p; rest != pairs.end(); ++rest)
           {
           if (rest->first == p->first)
             {
@@ -391,7 +400,7 @@ typename TImage::IndexValueType i, typename TImage::IndexValueType j)
         } //1-to-N
       else if (jCounts[p->second] == 1) //M-to-1
         {
-        for (PairSet::iterator rest = p; p != pairs.end(); ++p)
+        for (PairSet::iterator rest = p; rest != pairs.end(); ++rest)
           {
           if (rest->second == p->second)
             {
@@ -415,7 +424,7 @@ typename TImage::IndexValueType i, typename TImage::IndexValueType j)
             ++rest;
             }
           }
-        --iCounts[rest->first];
+        --iCounts[p->first];
         jCounts.erase(p->second);
         pairs.erase(p++);
         } //M-to-1
@@ -431,7 +440,7 @@ typename TImage::IndexValueType i, typename TImage::IndexValueType j)
     while (p != pairs.end())
       {
       regionIDs.clear();
-      for (PairSet::iterator rest = p; p != pairs.end(); ++p)
+      for (PairSet::iterator rest = p; rest != pairs.end(); ++rest)
         {
         if (rest->first == p->first)
           {
@@ -515,10 +524,12 @@ void MorphologicalContourInterpolator<TImage>::GenerateData()
     {
     m_TotalBoundingBox = m_BoundingBoxes.begin()->second;
     }
+  typename TImage::SizeType minusOne;
+  minusOne.Fill(-1);
   for (BoundingBoxesType::iterator it = m_BoundingBoxes.begin(); it != m_BoundingBoxes.end(); ++it)
     {
     ExpandRegion(m_TotalBoundingBox, it->second.GetIndex());
-    ExpandRegion(m_TotalBoundingBox, it->second.GetIndex() + it->second.GetSize());
+    ExpandRegion(m_TotalBoundingBox, it->second.GetIndex() + it->second.GetSize() + minusOne);
     }
 
   if (m_Axis == -1) //interpolate along all axes
