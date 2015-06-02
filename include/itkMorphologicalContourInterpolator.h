@@ -21,6 +21,7 @@
 #include "itkImageToImageFilter.h"
 #include "itkConnectedComponentImageFilter.h"
 #include "itkBinaryThresholdImageFilter.h"
+#include "itkExtractImageFilter.h"
 #include "itksys/hash_map.hxx"
 
 namespace itk
@@ -63,7 +64,7 @@ protected:
   ~MorphologicalContourInterpolator(){}
 
   typename TImage::PixelType m_Label;
-  int m_Axis;
+  int                        m_Axis;
 
   //grafted input and output to prevent unnecessary pipeline modification checks
   typename TImage::Pointer m_Input;
@@ -126,6 +127,9 @@ protected:
   typedef Image<bool, TImage::ImageDimension> BoolImageType;
   typename TImage::Pointer RegionedConnectedComponents(const typename TImage::RegionType region,
     typename TImage::PixelType label, IdentifierType &objectCount);
+
+  typedef ExtractImageFilter<typename TImage, typename TImage> RoiType;
+  typename RoiType::Pointer m_RoI;
 
   typedef BinaryThresholdImageFilter<typename TImage, BoolImageType> BinarizerType;
   typename BinarizerType::Pointer m_Binarizer;
