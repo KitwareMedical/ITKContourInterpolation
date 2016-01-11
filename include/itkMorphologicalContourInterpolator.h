@@ -111,14 +111,16 @@ protected:
   void Interpolate1to1(int axis, typename TImage *out, typename TImage::PixelType label,
     typename TImage::IndexValueType i, typename TImage::IndexValueType j,
     typename TImage::Pointer iConn, typename TImage::PixelType iRegionId,
-    typename TImage::Pointer jConn, typename TImage::PixelType jRegionId);
+    typename TImage::Pointer jConn, typename TImage::PixelType jRegionId,
+	typename TImage::IndexType translation);
 
   typedef std::vector<typename TImage::PixelType> PixelList;
 
   void Interpolate1toN(int axis, typename TImage *out, typename TImage::PixelType label,
     typename TImage::IndexValueType i, typename TImage::IndexValueType j,
     typename TImage::Pointer iConn, typename TImage::PixelType iRegionId,
-    typename TImage::Pointer jConn, PixelList jRegionIds);
+    typename TImage::Pointer jConn, PixelList jRegionIds,
+	typename TImage::IndexType translation);
 
   /** Returns squared distance in index space between two pixel indices */
   IdentifierType Distance2(typename TImage::IndexType t1, typename TImage::IndexType t2);
