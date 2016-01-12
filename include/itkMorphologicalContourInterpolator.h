@@ -126,6 +126,11 @@ protected:
   /** Returns the centroid of given regions */
   typename TImage::IndexType Centroid(typename TImage::Pointer conn, PixelList regionIds);
 
+  /** Calculates maximum intersection region for both slices given a translation.
+  Both inputs are modified so that jRegion is a translated version of iRegion. */
+  void IntersectionRegions(typename TImage::IndexType translation,
+	typename TImage::RegionType & iRegion, typename TImage::RegionType & jRegion);
+
   /** Returns number of intersecting pixels */
   IdentifierType Intersection(
     typename TImage::Pointer iConn, typename TImage::PixelType iRegionId,
