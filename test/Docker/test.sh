@@ -14,5 +14,6 @@ cmake \
   -G Ninja \
   -DITK_DIR:PATH=/usr/src/ITK-build \
   -DCMAKE_BUILD_TYPE:STRING=Release \
+  -DBUILDNAME:STRING=External-MorphologicalContourInterpolation \
     /usr/src/ITKMorphologicalContourInterpolation || die "CMake configuration failed"
 ctest -VV -D Experimental || die "ctest failed"
