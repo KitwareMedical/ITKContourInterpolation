@@ -225,7 +225,7 @@ MorphologicalContourInterpolator<TImage>
   phIndex[axis] = 0;
   for (unsigned d = 0; d < TImage::ImageDimension; d++)
     {
-  phIndex[d] += reg3.GetIndex(d);
+    phIndex[d] += reg3.GetIndex(d);
     }
   phSlice->SetPixel(phIndex, 1);
 
@@ -237,8 +237,8 @@ MorphologicalContourInterpolator<TImage>
   typename TImage::IndexType translation = Align(axis, iConn, iRegionId, phSlice, jRegionIds);
   for (unsigned d = 0; d < TImage::ImageDimension; d++)
     {
-  reg3.SetIndex(d, reg3.GetIndex(d) + translation[d]);
-  translation[d] = 0;
+    reg3.SetIndex(d, reg3.GetIndex(d) + translation[d]);
+    translation[d] = 0;
     }
   phSlice->SetRegions(reg3);
   Interpolate1to1(axis, out, label, i, j, iConn, iRegionId, phSlice, 1, translation);
@@ -310,7 +310,7 @@ IdentifierType MorphologicalContourInterpolator<TImage>
     iRegion.SetSize(d, std::min(iSize - t, jSize));
     iRegion.SetIndex(d, iBegin[d] + t);
     jRegion.SetIndex(d, jBegin[d]);
-  }
+    }
   else
     {
     iRegion.SetSize(d, std::min(iSize, jSize + t));
@@ -325,17 +325,17 @@ IdentifierType MorphologicalContourInterpolator<TImage>
   ImageRegionConstIterator<TImage> jIt(jConn, jRegion);
   while (!iIt.IsAtEnd())
     {
-  if (iIt.Get() == iRegionId)
-    {
-    typename TImage::PixelType jVal=jIt.Get();
-    typename PixelList::iterator res = std::find(jRegionIds.begin(), jRegionIds.end(), jVal);
-    if (res != jRegionIds.end())
+    if (iIt.Get() == iRegionId)
       {
-    count++;
+      typename TImage::PixelType jVal=jIt.Get();
+      typename PixelList::iterator res = std::find(jRegionIds.begin(), jRegionIds.end(), jVal);
+      if (res != jRegionIds.end())
+        {
+        count++;
+        }
       }
-    }
-  ++iIt;
-  ++jIt;
+    ++iIt;
+    ++jIt;
     }
   return count;
 }
@@ -351,26 +351,26 @@ MorphologicalContourInterpolator<TImage>
   IdentifierType pixelCount = 0;
   while (!it.IsAtEnd())
     {
-  typename TImage::PixelType val = it.Get();
-  if (val)
-    {
-    typename PixelList::iterator res = std::find(regionIds.begin(), regionIds.end(), val);
-    if (res != regionIds.end())
+    typename TImage::PixelType val = it.Get();
+    if (val)
       {
-      ++pixelCount;
-      typename TImage::IndexType pInd = it.GetIndex();
-      for (unsigned d = 0; d < TImage::ImageDimension; d++)
+      typename PixelList::iterator res = std::find(regionIds.begin(), regionIds.end(), val);
+      if (res != regionIds.end())
         {
-        ind[d] += pInd[d];
+        ++pixelCount;
+        typename TImage::IndexType pInd = it.GetIndex();
+        for (unsigned d = 0; d < TImage::ImageDimension; d++)
+          {
+          ind[d] += pInd[d];
+          }
         }
       }
-    }
-  ++it;
+    ++it;
     }
   typename TImage::IndexType retVal;
   for (unsigned d = 0; d < TImage::ImageDimension; d++)
     {
-  retVal[d] = ind[d] / pixelCount;
+    retVal[d] = ind[d] / pixelCount;
     }
   return retVal;
 }
@@ -390,9 +390,9 @@ typename TImage::Pointer jConn, PixelList jRegionIds)
 
   typename TImage::IndexType ind, centroidInd;
   for (unsigned d = 0; d < TImage::ImageDimension; d++)
-  {
-  ind[d] = iCentroid[d] - jCentroid[d];
-  }
+    {
+    ind[d] = iCentroid[d] - jCentroid[d];
+    }
   ind[axis] = 0; //i and j have different coordinate along this axis
   centroidInd = ind;
 
@@ -402,8 +402,8 @@ typename TImage::Pointer jConn, PixelList jRegionIds)
   typename TImage::RegionType jLPR = jConn->GetLargestPossibleRegion();
   for (IdentifierType d = 0; d < TImage::ImageDimension; d++)
     {
-  searchRegion.SetIndex(d, iLPR.GetIndex()[d] - jLPR.GetIndex()[d] - jLPR.GetSize(d) + 1);
-  searchRegion.SetSize(d, iLPR.GetSize(d) + jLPR.GetSize(d) - 2);
+    searchRegion.SetIndex(d, iLPR.GetIndex()[d] - jLPR.GetIndex()[d] - jLPR.GetSize(d) + 1);
+    searchRegion.SetSize(d, iLPR.GetSize(d) + jLPR.GetSize(d) - 2);
     }
   searchRegion.SetSize(axis, 1);
   searchRegion.SetIndex(axis, 0);
@@ -421,39 +421,39 @@ typename TImage::Pointer jConn, PixelList jRegionIds)
 
   while (!uncomputed.empty())
     {
-  ind = uncomputed.front();
-  uncomputed.pop();
+    ind = uncomputed.front();
+    uncomputed.pop();
     score = Intersection(iConn, iRegionId, jConn, jRegionIds, ind);
-  if (score > maxScore)
-    {
-    maxScore=score;
-    bestIndex = ind;
-    }
+    if (score > maxScore)
+      {
+      maxScore=score;
+      bestIndex = ind;
+      }
 
-  //we breadth this search
-  if (!m_HeuristicAlignment || maxScore == 0 || score > maxScore / 2)
-    {
-    for (unsigned d = 0; d < TImage::ImageDimension; d++)
+    //we breadth this search
+    if (!m_HeuristicAlignment || maxScore == 0 || score > maxScore / 2)
       {
-    if (d == axis)
-      {
-      continue; //do not waste time on additional checks
+      for (unsigned d = 0; d < TImage::ImageDimension; d++)
+        {
+      if (d == axis)
+        {
+        continue; //do not waste time on additional checks
+        }
+      ind[d] -= 1; //"left"
+      if (searchRegion.IsInside(ind) && !searched->GetPixel(ind))
+        {
+        uncomputed.push(ind);
+        searched->SetPixel(ind, true);
+        }
+      ind[d] += 2; //"right"
+      if (searchRegion.IsInside(ind) && !searched->GetPixel(ind))
+        {
+        uncomputed.push(ind);
+        searched->SetPixel(ind, true);
+        }
+      ind[d] -= 1; //return to initial
+        }
       }
-    ind[d] -= 1; //"left"
-    if (searchRegion.IsInside(ind) && !searched->GetPixel(ind))
-      {
-      uncomputed.push(ind);
-      searched->SetPixel(ind, true);
-      }
-    ind[d] += 2; //"right"
-    if (searchRegion.IsInside(ind) && !searched->GetPixel(ind))
-      {
-      uncomputed.push(ind);
-      searched->SetPixel(ind, true);
-      }
-    ind[d] -= 1; //return to initial
-      }
-    }
     }
   return bestIndex;
 }
@@ -671,8 +671,8 @@ MorphologicalContourInterpolator<TImage>
             }
           }
 
-    typename TImage::IndexType translation = Align(axis, iconn, p->first, jconn, regionIDs);
-    Interpolate1toN(axis, out, *it, i, j, iconn, p->first, jconn, regionIDs, translation);
+        typename TImage::IndexType translation = Align(axis, iconn, p->first, jconn, regionIDs);
+        Interpolate1toN(axis, out, *it, i, j, iconn, p->first, jconn, regionIDs, translation);
 
         typename PairSet::iterator rest = p;
         ++rest;
