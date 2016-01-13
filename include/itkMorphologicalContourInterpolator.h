@@ -93,7 +93,7 @@ protected:
   along more than one axis. */
   void DetermineSliceOrientations();
 
-  void InterpolateBetweenTwo(int axis, typename TImage *out,
+  void InterpolateBetweenTwo(int axis, TImage *out,
     typename TImage::IndexValueType i, typename TImage::IndexValueType j);
 
   /** If interpolation is done along more than one axis,
@@ -104,11 +104,11 @@ protected:
   void InterpolateAlong(int axis, TImage *out);
 
   /** Slice i has a region, slice j does not */
-  void Extrapolate(int axis, typename TImage *out, typename TImage::PixelType label,
+  void Extrapolate(int axis, TImage *out, typename TImage::PixelType label,
     typename TImage::IndexValueType i, typename TImage::IndexValueType j,
     typename TImage::Pointer iConn, typename TImage::PixelType iRegionId);
 
-  void Interpolate1to1(int axis, typename TImage *out, typename TImage::PixelType label,
+  void Interpolate1to1(int axis, TImage *out, typename TImage::PixelType label,
     typename TImage::IndexValueType i, typename TImage::IndexValueType j,
     typename TImage::Pointer iConn, typename TImage::PixelType iRegionId,
     typename TImage::Pointer jConn, typename TImage::PixelType jRegionId,
@@ -116,7 +116,7 @@ protected:
 
   typedef std::vector<typename TImage::PixelType> PixelList;
 
-  void Interpolate1toN(int axis, typename TImage *out, typename TImage::PixelType label,
+  void Interpolate1toN(int axis, TImage *out, typename TImage::PixelType label,
     typename TImage::IndexValueType i, typename TImage::IndexValueType j,
     typename TImage::Pointer iConn, typename TImage::PixelType iRegionId,
     typename TImage::Pointer jConn, PixelList jRegionIds,
@@ -162,13 +162,13 @@ protected:
   typename TImage::Pointer RegionedConnectedComponents(const typename TImage::RegionType region,
     typename TImage::PixelType label, IdentifierType &objectCount);
 
-  typedef ExtractImageFilter<typename TImage, typename TImage> RoiType;
+  typedef ExtractImageFilter< TImage, TImage > RoiType;
   typename RoiType::Pointer m_RoI;
 
-  typedef BinaryThresholdImageFilter<typename TImage, BoolImageType> BinarizerType;
+  typedef BinaryThresholdImageFilter< TImage, BoolImageType > BinarizerType;
   typename BinarizerType::Pointer m_Binarizer;
 
-  typedef ConnectedComponentImageFilter<BoolImageType, typename TImage> ConnectedComponentsType;
+  typedef ConnectedComponentImageFilter<BoolImageType, TImage> ConnectedComponentsType;
   typename ConnectedComponentsType::Pointer m_ConnectedComponents;
 
 private:
