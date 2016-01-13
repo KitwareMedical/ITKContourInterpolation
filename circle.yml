@@ -1,0 +1,14 @@
+machine:
+  services:
+    - docker
+
+dependencies:
+  override:
+    - docker info
+    - docker pull insighttoolkit/morphologicalcontourinterpolation-test
+    - ~/ITKMorphologicalContourInterpolation/test/Docker/build.sh
+
+test:
+  override:
+    - mkdir ~/ITKMorphologicalContourInterpolation-build
+    - docker run -v ~/ITKMorphologicalContourInterpolation:/usr/src/ITKMorphologicalContourInterpolation -v ~/ITKMorphologicalContourInterpolation-build:/usr/src/ITKMorphologicalContourInterpolation-build insighttoolkit/morphologicalcontourinterpolation-test /usr/src/ITKMorphologicalContourInterpolation/test/Docker/test.sh
