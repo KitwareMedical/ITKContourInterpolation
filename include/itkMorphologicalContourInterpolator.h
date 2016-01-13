@@ -101,7 +101,7 @@ protected:
   -if all interpolated images have 0 for a given pixel, the output is 0
   -if just one image has a non-zero label, then that label is chosen
   -if more than one image has a non-zero label, median label is chosen */
-  void InterpolateAlong(int axis, typename TImage *out);
+  void InterpolateAlong(int axis, TImage *out);
 
   /** Slice i has a region, slice j does not */
   void Extrapolate(int axis, typename TImage *out, typename TImage::PixelType label,
