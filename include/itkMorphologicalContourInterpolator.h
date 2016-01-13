@@ -56,7 +56,7 @@ public:
 
   /** Axis of interpolation. -1 means interpolation along all axes (default). */
   itkGetConstMacro(Axis, int);
-  
+
   /** Heuristic alignment of regions for interpolation is faster than optimal alignment.
   *   Default is heuristic. */
   itkSetMacro(HeuristicAlignment, bool);
@@ -68,7 +68,7 @@ public:
   /** Heuristic alignment of regions for interpolation is faster than optimal alignment.
   *   Default is heuristic. */
   itkGetConstMacro(HeuristicAlignment, bool);
-  
+
 
   /** Run-time type information (and related methods). */
   itkTypeMacro(MorphologicalContourInterpolator, ImageToImageFilter);

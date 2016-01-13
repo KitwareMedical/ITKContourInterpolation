@@ -430,7 +430,7 @@ typename TImage::Pointer jConn, PixelList jRegionIds)
 	  bestIndex = ind;
 	  }
 
-	//we breadth this search 
+	//we breadth this search
 	if (!m_HeuristicAlignment || maxScore == 0 || score > maxScore / 2)
 	  {
 	  for (unsigned d = 0; d < TImage::ImageDimension; d++)
@@ -643,7 +643,7 @@ MorphologicalContourInterpolator<TImage>
 
 		typename TImage::IndexType translation = Align(axis, jconn, p->second, iconn, regionIDs);
 		Interpolate1toN(axis, out, *it, j, i, jconn, p->second, iconn, regionIDs, translation);
-        
+
         typename PairSet::iterator rest = p;
         ++rest;
         while (rest != pairs.end())
