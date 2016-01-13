@@ -34,7 +34,7 @@
 
 namespace itk
 {
-template<class TImage>
+template< typename TImage >
 void WriteDebug(typename TImage::Pointer out, const char *filename)
 {
 	typedef ImageFileWriter<TImage> WriterType;
@@ -51,7 +51,7 @@ void WriteDebug(typename TImage::Pointer out, const char *filename)
 	}
 }
 
-template<class TImage>
+template< typename TImage >
 MorphologicalContourInterpolator<TImage>::MorphologicalContourInterpolator()
  :m_Label(0),
   m_Axis(-1),
@@ -66,14 +66,14 @@ MorphologicalContourInterpolator<TImage>::MorphologicalContourInterpolator()
   m_ConnectedComponents->SetFullyConnected(true);
 }
 
-template<class TImage>
+template< typename TImage >
 typename MorphologicalContourInterpolator<TImage>::SliceSetType
 MorphologicalContourInterpolator<TImage>::GetLabeledSliceIndices(unsigned int axis)
 {
   return m_LabeledSlices[axis];
 }
 
-template<class TImage>
+template< typename TImage >
 void MorphologicalContourInterpolator<TImage>::
 SetLabeledSliceIndices(unsigned int axis, SliceSetType indices)
 {
@@ -81,7 +81,7 @@ SetLabeledSliceIndices(unsigned int axis, SliceSetType indices)
   this->Modified();
 }
 
-template<class TImage>
+template< typename TImage >
 void MorphologicalContourInterpolator<TImage>::
 SetLabeledSliceIndices(unsigned int axis, std::vector<typename TImage::IndexValueType> indices)
 {
@@ -89,7 +89,7 @@ SetLabeledSliceIndices(unsigned int axis, std::vector<typename TImage::IndexValu
   this->Modified();
 }
 
-template<class TImage>
+template< typename TImage >
 void MorphologicalContourInterpolator<TImage>::
 ExpandRegion(typename TImage::RegionType &region, typename TImage::IndexType index)
 {
@@ -108,7 +108,7 @@ ExpandRegion(typename TImage::RegionType &region, typename TImage::IndexType ind
     }
 }
 
-template<class TImage>
+template< typename TImage >
 void MorphologicalContourInterpolator<TImage>::DetermineSliceOrientations()
 {
   m_LabeledSlices.clear();
@@ -186,7 +186,7 @@ void MorphologicalContourInterpolator<TImage>::DetermineSliceOrientations()
     }
 }
 
-template<class TImage>
+template< typename TImage >
 void MorphologicalContourInterpolator<TImage>::
 Extrapolate(int axis, TImage *out, typename TImage::PixelType label,
 typename TImage::IndexValueType i, typename TImage::IndexValueType j,
@@ -230,7 +230,7 @@ typename TImage::Pointer iConn, typename TImage::PixelType iRegionId)
   Interpolate1to1(axis, out, label, i, j, iConn, iRegionId, phSlice, 1, translation);
 }
 
-template<class TImage>
+template< typename TImage >
 void MorphologicalContourInterpolator<TImage>::
 Interpolate1to1(int axis, TImage *out, typename TImage::PixelType label,
 typename TImage::IndexValueType i, typename TImage::IndexValueType j,
@@ -242,7 +242,7 @@ typename TImage::IndexType translation)
   //build transition sequence and pick the median
 }
 
-template<class TImage>
+template< typename TImage >
 void MorphologicalContourInterpolator<TImage>::
 Interpolate1toN(int axis, TImage *out, typename TImage::PixelType label,
 typename TImage::IndexValueType i, typename TImage::IndexValueType j,
@@ -254,7 +254,7 @@ typename TImage::IndexType translation)
   //split the bigger region and do N 1-to-1 interpolations
 }
 
-template<class TImage>
+template< typename TImage >
 typename TImage::RegionType MorphologicalContourInterpolator<TImage>::
 MergeBoundingBoxes(const BoundingBoxesType& boundingBoxes)
 {
@@ -270,7 +270,7 @@ MergeBoundingBoxes(const BoundingBoxesType& boundingBoxes)
   return result;
 }
 
-template<class TImage>
+template< typename TImage >
 IdentifierType MorphologicalContourInterpolator<TImage>::
 Intersection(typename TImage::Pointer iConn, typename TImage::PixelType iRegionId,
 typename TImage::Pointer jConn, PixelList jRegionIds,
@@ -319,7 +319,7 @@ typename TImage::IndexType translation)
   return count;
 }
 
-template<class TImage>
+template< typename TImage >
 typename TImage::IndexType MorphologicalContourInterpolator<TImage>::
 Centroid(typename TImage::Pointer conn, PixelList regionIds)
 {
@@ -352,7 +352,7 @@ Centroid(typename TImage::Pointer conn, PixelList regionIds)
   return retVal;
 }
 
-template<class TImage>
+template< typename TImage >
 typename TImage::IndexType MorphologicalContourInterpolator<TImage>::
 Align(int axis,
 typename TImage::Pointer iConn, typename TImage::PixelType iRegionId,
@@ -434,7 +434,7 @@ typename TImage::Pointer jConn, PixelList jRegionIds)
   return bestIndex;
 }
 
-template<class TImage>
+template< typename TImage >
 typename TImage::Pointer MorphologicalContourInterpolator<TImage>::RegionedConnectedComponents
 (const typename TImage::RegionType region, typename TImage::PixelType label, IdentifierType &objectCount)
 {
@@ -447,7 +447,7 @@ typename TImage::Pointer MorphologicalContourInterpolator<TImage>::RegionedConne
   return m_ConnectedComponents->GetOutput();
 }
 
-template< class TImage>
+template< typename TImage >
 void MorphologicalContourInterpolator<TImage>::
 InterpolateBetweenTwo(int axis, TImage *out,
 typename TImage::IndexValueType i, typename TImage::IndexValueType j)
@@ -706,7 +706,7 @@ typename TImage::IndexValueType i, typename TImage::IndexValueType j)
     } //for each label with overlaps
 } //void MorphologicalContourInterpolator::InterpolateBetweenTwo()
 
-template< class TImage>
+template< typename TImage >
 void MorphologicalContourInterpolator<TImage>::
 InterpolateAlong(int axis, TImage *out)
 {
@@ -737,7 +737,7 @@ InterpolateAlong(int axis, TImage *out)
     }
 }
 
-template< class TImage>
+template< typename TImage >
 void MorphologicalContourInterpolator<TImage>::GenerateData()
 {
   m_Input = TImage::New();
@@ -861,7 +861,6 @@ void MorphologicalContourInterpolator<TImage>::GenerateData()
   this->m_Output = ITK_NULLPTR;
 }
 
-}// end namespace
-
+}// end namespace itk
 
 #endif //itkMorphologicalContourInterpolator_hxx
