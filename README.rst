@@ -2,8 +2,7 @@ Morphological Contour Interpolation
 ===================================
 
 .. image:: https://circleci.com/gh/KitwareMedical/ITKMorphologicalContourInterpolation.svg?style=svg
-  :target:
-  https://circleci.com/gh/KitwareMedical/ITKMorphologicalContourInterpolation
+  :target: https://circleci.com/gh/KitwareMedical/ITKMorphologicalContourInterpolation
 
 An `ITK <http://itk.org>`_-based implementation of morphological contour
 interpolation off the paper:
