@@ -19,6 +19,9 @@
 #define itkMorphologicalContourInterpolator_h
 
 #include "itkImageToImageFilter.h"
+#include "itkConnectedComponentImageFilter.h"
+#include "itkBinaryThresholdImageFilter.h"
+#include "itkExtractImageFilter.h"
 #include "itksys/hash_map.hxx"
 
 namespace itk
@@ -28,9 +31,9 @@ class MorphologicalContourInterpolator :public ImageToImageFilter < TImage, TIma
 {
 public:
   /** Standard class typedefs. */
-  typedef MorphologicalContourInterpolator             Self;
+  typedef MorphologicalContourInterpolator     Self;
   typedef ImageToImageFilter< TImage, TImage > Superclass;
-  typedef SmartPointer< Self >        Pointer;
+  typedef SmartPointer< Self >                 Pointer;
 
   /** Method for creation through the object factory. */
   itkNewMacro(Self);
@@ -52,19 +55,34 @@ public:
 
   /** Axis of interpolation. -1 means interpolation along all axes (default). */
   itkGetConstMacro(Axis, int);
+  
+  /** Heuristic alignment of regions for interpolation is faster than optimal alignment.
+  *   Default is heuristic. */
+  itkSetMacro(HeuristicAlignment, bool);
+
+  /** Heuristic alignment of regions for interpolation is faster than optimal alignment.
+  *   Default is heuristic. */
+  itkGetMacro(HeuristicAlignment, bool);
+
+  /** Heuristic alignment of regions for interpolation is faster than optimal alignment.
+  *   Default is heuristic. */
+  itkGetConstMacro(HeuristicAlignment, bool);
+  
 
   /** Run-time type information (and related methods). */
   itkTypeMacro(MorphologicalContourInterpolator, ImageToImageFilter);
 
 protected:
-  MorphologicalContourInterpolator()
-    :m_Label(0),
-    m_Axis(-1)
-  { }
+  MorphologicalContourInterpolator();
   ~MorphologicalContourInterpolator(){}
 
   typename TImage::PixelType m_Label;
-  int m_Axis;
+  int                        m_Axis;
+  bool                       m_HeuristicAlignment;
+
+  //grafted input and output to prevent unnecessary pipeline modification checks
+  typename TImage::Pointer m_Input;
+  typename TImage::Pointer m_Output;
 
   /** Does the real work. */
   virtual void GenerateData() ITK_OVERRIDE;
@@ -75,6 +93,9 @@ protected:
   along more than one axis. */
   void DetermineSliceOrientations();
 
+  void InterpolateBetweenTwo(int axis, typename TImage *out,
+    typename TImage::IndexValueType i, typename TImage::IndexValueType j);
+
   /** If interpolation is done along more than one axis,
   the interpolations are merged using a modified "or" rule:
   -if all interpolated images have 0 for a given pixel, the output is 0
@@ -82,15 +103,73 @@ protected:
   -if more than one image has a non-zero label, median label is chosen */
   void InterpolateAlong(int axis, typename TImage *out);
 
+  /** Slice i has a region, slice j does not */
+  void Extrapolate(int axis, typename TImage *out, typename TImage::PixelType label,
+    typename TImage::IndexValueType i, typename TImage::IndexValueType j,
+    typename TImage::Pointer iConn, typename TImage::PixelType iRegionId);
+
+  void Interpolate1to1(int axis, typename TImage *out, typename TImage::PixelType label,
+    typename TImage::IndexValueType i, typename TImage::IndexValueType j,
+    typename TImage::Pointer iConn, typename TImage::PixelType iRegionId,
+    typename TImage::Pointer jConn, typename TImage::PixelType jRegionId,
+	typename TImage::IndexType translation);
+
+  typedef std::vector<typename TImage::PixelType> PixelList;
+
+  void Interpolate1toN(int axis, typename TImage *out, typename TImage::PixelType label,
+    typename TImage::IndexValueType i, typename TImage::IndexValueType j,
+    typename TImage::Pointer iConn, typename TImage::PixelType iRegionId,
+    typename TImage::Pointer jConn, PixelList jRegionIds,
+	typename TImage::IndexType translation);
+
+  /** Returns the centroid of given regions */
+  typename TImage::IndexType Centroid(typename TImage::Pointer conn, PixelList regionIds);
+
+  /** Returns number of intersecting pixels */
+  IdentifierType Intersection(
+	  typename TImage::Pointer iConn, typename TImage::PixelType iRegionId,
+	  typename TImage::Pointer jConn, PixelList jRegionIds,
+	  typename TImage::IndexType translation);
+
+  /** How much j needs to be translated to best align with i */
+  typename TImage::IndexType Align(int axis,
+    typename TImage::Pointer iConn, typename TImage::PixelType iRegionId,
+    typename TImage::Pointer jConn, PixelList jRegionIds);
+
   typedef itk::FixedArray<bool, TImage::ImageDimension> OrientationType;
   typedef itksys::hash_map<typename TImage::PixelType, OrientationType> OrientationsType;
-
-  typedef std::map<typename TImage::PixelType, typename TImage::RegionType> BoundingBoxesType;
   OrientationsType m_Orientations;
-  BoundingBoxesType m_BoundingBoxes;
+
+  typedef itksys::hash_map<typename TImage::PixelType, typename TImage::RegionType> BoundingBoxesType;
+  BoundingBoxesType m_BoundingBoxes; //bounding box for each label
+
+  typename TImage::RegionType MergeBoundingBoxes(const BoundingBoxesType& boundingBoxes);
+
+  //each label gets a set of slices in which it is present
+  typedef std::set<typename TImage::IndexValueType> SliceSetType;
+  typedef itksys::hash_map<typename TImage::PixelType, SliceSetType > LabeledSlicesType;
+  std::vector<LabeledSlicesType> m_LabeledSlices; //one for each axis
+
+  void SetLabeledSliceIndices(unsigned int axis, std::vector<typename TImage::IndexValueType> indices);
+  void SetLabeledSliceIndices(unsigned int axis, SliceSetType indices);
+  SliceSetType GetLabeledSliceIndices(unsigned int axis);
 
   //assumes both valid region and valid index
   void ExpandRegion(typename TImage::RegionType &region, typename TImage::IndexType index);
+  typename TImage::RegionType m_TotalBoundingBox;
+
+  typedef Image<bool, TImage::ImageDimension> BoolImageType;
+  typename TImage::Pointer RegionedConnectedComponents(const typename TImage::RegionType region,
+    typename TImage::PixelType label, IdentifierType &objectCount);
+
+  typedef ExtractImageFilter<typename TImage, typename TImage> RoiType;
+  typename RoiType::Pointer m_RoI;
+
+  typedef BinaryThresholdImageFilter<typename TImage, BoolImageType> BinarizerType;
+  typename BinarizerType::Pointer m_Binarizer;
+
+  typedef ConnectedComponentImageFilter<BoolImageType, typename TImage> ConnectedComponentsType;
+  typename ConnectedComponentsType::Pointer m_ConnectedComponents;
 
 private:
   MorphologicalContourInterpolator(const Self &); //purposely not implemented
