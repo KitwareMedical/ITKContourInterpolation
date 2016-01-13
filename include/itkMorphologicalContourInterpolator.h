@@ -113,7 +113,7 @@ protected:
     typename TImage::IndexValueType i, typename TImage::IndexValueType j,
     typename TImage::Pointer iConn, typename TImage::PixelType iRegionId,
     typename TImage::Pointer jConn, typename TImage::PixelType jRegionId,
-	typename TImage::IndexType translation);
+  typename TImage::IndexType translation);
 
   typedef std::vector<typename TImage::PixelType> PixelList;
 
@@ -121,16 +121,16 @@ protected:
     typename TImage::IndexValueType i, typename TImage::IndexValueType j,
     typename TImage::Pointer iConn, typename TImage::PixelType iRegionId,
     typename TImage::Pointer jConn, PixelList jRegionIds,
-	typename TImage::IndexType translation);
+  typename TImage::IndexType translation);
 
   /** Returns the centroid of given regions */
   typename TImage::IndexType Centroid(typename TImage::Pointer conn, PixelList regionIds);
 
   /** Returns number of intersecting pixels */
   IdentifierType Intersection(
-	  typename TImage::Pointer iConn, typename TImage::PixelType iRegionId,
-	  typename TImage::Pointer jConn, PixelList jRegionIds,
-	  typename TImage::IndexType translation);
+    typename TImage::Pointer iConn, typename TImage::PixelType iRegionId,
+    typename TImage::Pointer jConn, PixelList jRegionIds,
+    typename TImage::IndexType translation);
 
   /** How much j needs to be translated to best align with i */
   typename TImage::IndexType Align(int axis,
