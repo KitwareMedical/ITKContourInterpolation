@@ -26,6 +26,8 @@
 #include "itkBinaryDilateImageFilter.h"
 #include "itkBinaryCrossStructuringElement.h"
 //#include "itkBinaryBallStructuringElement.h"
+#include "itkUnaryFunctorImageFilter.h"
+#include "itkAndImageFilter.h"
 #include "itkCastImageFilter.h"
 #include <utility>
 #include <algorithm>
@@ -217,8 +219,8 @@ template< typename TImage >
 void
 MorphologicalContourInterpolator<TImage>
 ::Extrapolate(int axis, TImage *out, typename TImage::PixelType label,
-typename TImage::IndexValueType i, typename TImage::IndexValueType j,
-typename TImage::Pointer iConn, typename TImage::PixelType iRegionId)
+  typename TImage::IndexValueType i, typename TImage::IndexValueType j,
+  typename TImage::Pointer iConn, typename TImage::PixelType iRegionId)
 {
   //create a phantom small slice
   typename TImage::Pointer phSlice = TImage::New();
@@ -262,10 +264,10 @@ template< typename TImage >
 void
 MorphologicalContourInterpolator<TImage>
 ::Interpolate1to1(int axis, TImage *out, typename TImage::PixelType label,
-typename TImage::IndexValueType i, typename TImage::IndexValueType j,
-typename TImage::Pointer iConn, typename TImage::PixelType iRegionId,
-typename TImage::Pointer jConn, typename TImage::PixelType jRegionId,
-typename TImage::IndexType translation)
+  typename TImage::IndexValueType i, typename TImage::IndexValueType j,
+  typename TImage::Pointer iConn, typename TImage::PixelType iRegionId,
+  typename TImage::Pointer jConn, typename TImage::PixelType jRegionId,
+  typename TImage::IndexType translation)
 {
   ;
   //build transition sequence and pick the median
@@ -281,13 +283,30 @@ typename TImage::Pointer iConn, typename TImage::PixelType iRegionId,
 typename TImage::Pointer jConn, PixelList jRegionIds,
 typename TImage::IndexType translation)
 {
-  //split the bigger region and do N 1-to-1 interpolations
+  //first convert iConn into binary mask
+  class MatchesID
+  {
+    typename TImage::PixelType _id;
+  public:
+    MatchesID(){}
+    MatchesID(typename TImage::PixelType id) :_id(id){}
+    bool operator!=(const MatchesID & other){ return _id != other._id; }
+    bool operator==(const MatchesID & other){ return _id == other._id; }
+    inline bool operator()(const typename TImage::PixelType & val) const
+    {
+      return val == _id;
+    }
+  } matchesID(iRegionId);
   typedef itk::Image<bool, TImage::ImageDimension> BoolImageType;
-  typedef itk::CastImageFilter<TImage, BoolImageType> CastType;
+  typedef itk::UnaryFunctorImageFilter<TImage, BoolImageType, MatchesID> CastType;
   CastType::Pointer caster = CastType::New();
+  caster->SetFunctor(matchesID);
   caster->SetInput(iConn);
   caster->Update();
   BoolImageType::Pointer mask = caster->GetOutput();
+  //WriteDebug(mask, "C:\\mask.nrrd");
+  //WriteDebug<TImage>(iConn, "C:\\iConn.nrrd");
+  //WriteDebug<TImage>(jConn, "C:\\jConn.nrrd");
 
   typename TImage::RegionType iRegion, jRegion, newjRegion;
   iRegion = iConn->GetLargestPossibleRegion();
@@ -334,9 +353,9 @@ typename TImage::IndexType translation)
     ++jIt;
     ++belongInit;
     }
-  //WriteDebug<TImage>(belongs, "C:\\belongs.nrrd");
+  WriteDebug<TImage>(belongs, "C:\\belongs.nrrd");
 
-  //prepare belonging image and dilation filter
+  //prepare dilation filter
   iRegion = iConn->GetLargestPossibleRegion(); //expand to full i image
   for (unsigned x = 0; x < jRegionIds.size(); x++)
     {
@@ -367,10 +386,10 @@ typename TImage::IndexType translation)
       {
       dilate->SetInput(blobs[x]);
       and->SetInput(1, dilate->GetOutput());
-      //and->Update();
-      //blobs[x] = and->GetOutput();
-      dilate->Update();
-      blobs[x] = dilate->GetOutput();
+      and->Update();
+      blobs[x] = and->GetOutput();
+      //dilate->Update();
+      //blobs[x] = dilate->GetOutput();
       blobs[x]->DisconnectPipeline();
       //WriteDebug(blobs[x], (std::string("C:\\blob") + char('0' + x) + ".nrrd").c_str());
       }
@@ -379,7 +398,7 @@ typename TImage::IndexType translation)
     maskIt2.GoToBegin();
     jIt2.GoToBegin();
     belongIt.GoToBegin();
-    while (!maskIt2.IsAtEnd())
+    while (!maskIt2.IsAtEnd()) //hollow out the big mask with dilated seeds while avoiding conflicts
       {
       if (maskIt2.Get())
         {
@@ -417,13 +436,6 @@ typename TImage::IndexType translation)
               blobs[x]->SetPixel(jIt2.GetIndex(), false);
               }
             }
-          }
-        }
-      else //clip blobs by the original mask
-        {
-        for (unsigned x = 0; x < jRegionIds.size(); x++)
-          {
-          blobs[x]->SetPixel(jIt2.GetIndex(), false);
           }
         }
       ++maskIt2;
