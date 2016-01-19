@@ -16,6 +16,7 @@ itk_add_test( NAME itkMorphologicalContourInterpolationTest_${ImageName}
 endfunction()
 
 # Handcrafted tests
+JustInputTest(Micro1 nrrd)
 JustInputTest(SimplestOneToOne nrrd)
 JustInputTest(OneToOne nrrd)
 JustInputTest(OneToThree nrrd)
@@ -26,7 +27,6 @@ JustInputTest(ThreeAxisFourLabelConflict nrrd)
 JustInputTest(AccidentalMiddleSliceSegmentation nrrd)
 JustInputTest(FullEndSevenLabels nrrd)
 JustInputTest(ManyToMany nrrd)
-JustInputTest(Micro1 nrrd)
 
 # Paul's tests
 JustInputTest(105769moving_resliced_to_fixedhz2_segmentation nii.gz)
