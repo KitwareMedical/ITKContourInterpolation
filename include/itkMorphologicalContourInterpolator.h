@@ -115,7 +115,7 @@ protected:
     typename TImage::IndexValueType i, typename TImage::IndexValueType j,
     typename TImage::Pointer iConn, typename TImage::PixelType iRegionId);
 
-  typedef itk::Image<bool, TImage::ImageDimension> BoolImageType;
+  typedef Image<bool, TImage::ImageDimension> BoolImageType;
 
   /** A sequence of conditional dilations starting with begin and reaching end.
   begin and end must cover the same region (size and index the same) */
@@ -169,7 +169,7 @@ protected:
     typename TImage::Pointer iConn, typename TImage::PixelType iRegionId,
     typename TImage::Pointer jConn, PixelList jRegionIds);
 
-  typedef itk::FixedArray<bool, TImage::ImageDimension> OrientationType;
+  typedef FixedArray<bool, TImage::ImageDimension> OrientationType;
   typedef itksys::hash_map<typename TImage::PixelType, OrientationType> OrientationsType;
   OrientationsType m_Orientations;
 
@@ -207,29 +207,29 @@ protected:
   typedef ConnectedComponentImageFilter<BoolImageType, TImage> ConnectedComponentsType;
   typename ConnectedComponentsType::Pointer m_ConnectedComponents;
 
-  typedef itk::BinaryCrossStructuringElement<bool, TImage::ImageDimension> StructuringElementType;
+  typedef BinaryCrossStructuringElement<bool, TImage::ImageDimension> StructuringElementType;
   StructuringElementType m_StructuringElement;
 
-  typedef itk::BinaryDilateImageFilter<BoolImageType, BoolImageType, StructuringElementType> DilateType;
+  typedef BinaryDilateImageFilter<BoolImageType, BoolImageType, StructuringElementType> DilateType;
   typename DilateType::Pointer m_Dilator;
 
-  typedef itk::AndImageFilter<BoolImageType, BoolImageType, BoolImageType> AndFilterType;
+  typedef AndImageFilter<BoolImageType, BoolImageType, BoolImageType> AndFilterType;
   typename AndFilterType::Pointer m_And;
 
-  typedef itk::OrImageFilter<BoolImageType> OrType;
+  typedef OrImageFilter<BoolImageType> OrType;
   typename OrType::Pointer m_Or;
 
   class MatchesID
   {
-    typename TImage::PixelType _id;
+    typename TImage::PixelType m_ID;
   public:
     MatchesID(){}
-    MatchesID(typename TImage::PixelType id) :_id(id){}
-    bool operator!=(const MatchesID & other){ return _id != other._id; }
-    bool operator==(const MatchesID & other){ return _id == other._id; }
+    MatchesID(typename TImage::PixelType id) :m_ID(id){}
+    bool operator!=(const MatchesID & other){ return m_ID != other.m_ID; }
+    bool operator==(const MatchesID & other){ return m_ID == other.m_ID; }
     inline bool operator()(const typename TImage::PixelType & val) const
     {
-      return val == _id;
+      return val == m_ID;
     }
   };
 
