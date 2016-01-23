@@ -6,6 +6,9 @@ set( MorphologicalContourInterpolationTests
 
 CreateTestDriver( MorphologicalContourInterpolation "${MorphologicalContourInterpolation-Test_LIBRARIES}" "${MorphologicalContourInterpolationTests}" )
 
+add_executable(runFromIDE manualTest.cxx ${MorphologicalContourInterpolationTests})
+target_link_libraries(runFromIDE ${MorphologicalContourInterpolation-Test_LIBRARIES})
+
 function(JustInputTest ImageName Ext)
 itk_add_test( NAME itkMorphologicalContourInterpolationTest_${ImageName}
   COMMAND MorphologicalContourInterpolationTestDriver
@@ -23,10 +26,11 @@ JustInputTest(OneToThree nrrd)
 JustInputTest(ExtrapolationAppearing nrrd)
 JustInputTest(DoubleTwoLabelBranching nrrd)
 JustInputTest(TwoAxisDoubleTwoLabelBranchingConflict nrrd)
-JustInputTest(ThreeAxisFourLabelConflict nrrd)
+JustInputTest(ThreeAxisFourLabelConflict nrrd) #TODO: debug
 JustInputTest(AccidentalMiddleSliceSegmentation nrrd)
-JustInputTest(FullEndSevenLabels nrrd)
-JustInputTest(ManyToMany nrrd)
+JustInputTest(FullEndSevenLabels nrrd) #TODO: debug
+JustInputTest(ManyToMany16 nrrd) #TODO: debug
+JustInputTest(ManyToMany nrrd) #TODO: debug
 
 # Paul's tests
 JustInputTest(105769moving_resliced_to_fixedhz2_segmentation nii.gz)
