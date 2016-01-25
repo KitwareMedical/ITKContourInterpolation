@@ -26,11 +26,13 @@ JustInputTest(OneToThree nrrd)
 JustInputTest(ExtrapolationAppearing nrrd)
 JustInputTest(DoubleTwoLabelBranching nrrd)
 JustInputTest(TwoAxisDoubleTwoLabelBranchingConflict nrrd)
-JustInputTest(ThreeAxisFourLabelConflict nrrd) #TODO: debug
+JustInputTest(ThreeAxisFourLabelConflict nrrd)
 JustInputTest(AccidentalMiddleSliceSegmentation nrrd)
-JustInputTest(FullEndSevenLabels nrrd) #TODO: debug
+JustInputTest(SevenLabels nrrd) #TODO: debug
+JustInputTest(FullEnd nrrd) #TODO: debug
 JustInputTest(ManyToMany16 nrrd) #TODO: debug
 JustInputTest(ManyToMany nrrd) #TODO: debug
+JustInputTest(BigZ nrrd) #TODO: debug
 
 # Paul's tests
 JustInputTest(105769moving_resliced_to_fixedhz2_segmentation nii.gz)
