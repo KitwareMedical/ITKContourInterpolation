@@ -1311,7 +1311,7 @@ MorphologicalContourInterpolator<TImage>
         typename TImage::Pointer imageA = TImage::New();
         imageA->CopyInformation(m_Output);
         imageA->SetRegions(m_Output->GetRequestedRegion());
-        imageA->Allocate();
+        imageA->Allocate(true);
         this->InterpolateAlong(a, imageA);
         perAxisInterpolates.push_back(imageA);
         }
