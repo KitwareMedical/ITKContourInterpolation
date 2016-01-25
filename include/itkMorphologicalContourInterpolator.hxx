@@ -509,9 +509,9 @@ typename TImage::IndexType translation)
   caster->SetInput(iConn);
   caster->Update();
   typename BoolImageType::Pointer mask = caster->GetOutput();
-  //WriteDebug(mask, "C:\\mask.nrrd");
-  //WriteDebug<TImage>(iConn, "C:\\iConn.nrrd");
-  //WriteDebug<TImage>(jConn, "C:\\jConn.nrrd");
+  WriteDebug(mask, "C:\\mask.nrrd");
+  WriteDebug<TImage>(iConn, "C:\\iConn.nrrd");
+  WriteDebug<TImage>(jConn, "C:\\jConn.nrrd");
 
   typename TImage::RegionType iRegion, jRegion, newjRegion;
   iRegion = iConn->GetLargestPossibleRegion();
@@ -740,7 +740,11 @@ IdentifierType MorphologicalContourInterpolator<TImage>
   jRegion = jConn->GetLargestPossibleRegion();
   IntersectionRegions(translation, iRegion, jRegion);
 
-  IdentifierType count = 0;
+  std::vector<IdentifierType> counts(jRegionIds.size());
+  for (int x = 0; x < jRegionIds.size(); x++)
+    {
+	counts[x] = 0;
+    }
   ImageRegionConstIterator<TImage> iIt(iConn, iRegion);
   ImageRegionConstIterator<TImage> jIt(jConn, jRegion);
   while (!iIt.IsAtEnd())
@@ -751,13 +755,22 @@ IdentifierType MorphologicalContourInterpolator<TImage>
       typename PixelList::iterator res = std::find(jRegionIds.begin(), jRegionIds.end(), jVal);
       if (res != jRegionIds.end())
         {
-        count++;
+		++counts[res - jRegionIds.begin()];
         }
       }
     ++iIt;
     ++jIt;
     }
-  return count;
+  IdentifierType sum = 0;
+  for (int x = 0; x < jRegionIds.size(); x++)
+    {
+	if (counts[x] == 0)
+	  {
+	  return 0; //iConn must intersect all subregions of jConn
+	  }
+	sum += counts[x];
+    }
+  return sum;
 }
 
 template< typename TImage >
@@ -833,7 +846,6 @@ typename TImage::Pointer jConn, PixelList jRegionIds)
   {
       ind[d] = jCentroid[d] - iCentroid[d];
   }
-  //ind[axis] = 0; //i and j have different coordinate along this axis
 
   //construct an image with all possible translations
   typename TImage::RegionType searchRegion;
@@ -854,6 +866,9 @@ typename TImage::Pointer jConn, PixelList jRegionIds)
   //breadth first search starting from centroid, implicitly:
   //when intersection scores are equal, chooses the one closer to centroid
   std::queue<typename TImage::IndexType> uncomputed;
+  typename TImage::IndexType t0 = { 0 };
+  t0[axis] = ind[axis];
+  uncomputed.push(t0); //no translation
   uncomputed.push(ind);
   searched->SetPixel(ind, true);
   IdentifierType score, maxScore = 0;
