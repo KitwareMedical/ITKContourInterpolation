@@ -863,23 +863,28 @@ typename TImage::Pointer jConn, PixelList jRegionIds)
   std::queue<typename TImage::IndexType> uncomputed;
   typename TImage::IndexType t0 = { 0 };
   t0[axis] = ind[axis];
-  uncomputed.push(t0); //no translation
-  uncomputed.push(ind);
+  uncomputed.push(t0); //no translation - guaranteed to find a non-zero intersection
+  uncomputed.push(ind); //this introduces movement, and possibly has the same score
   searched->SetPixel(ind, true);
   IdentifierType score, maxScore = 0;
   typename TImage::IndexType bestIndex;
 
   //debug: construct and later fill the image with intersection scores
+#ifdef _DEBUG
   typename TImage::Pointer scoreImage = TImage::New();
   scoreImage->SetRegions(searchRegion);
   scoreImage->Allocate(true);
+#endif // _DEBUG
 
   while (!uncomputed.empty())
     {
     ind = uncomputed.front();
     uncomputed.pop();
     score = Intersection(iConn, iRegionId, jConn, jRegionIds, ind);
-    scoreImage->SetPixel(ind, score); //debug
+#ifdef _DEBUG
+	scoreImage->SetPixel(ind, score + 1); //unexplored=0, noIntersection=1
+#endif // _DEBUG
+
     if (score > maxScore)
       {
       maxScore=score;
@@ -912,7 +917,9 @@ typename TImage::Pointer jConn, PixelList jRegionIds)
       }
     }
   //WriteDebug(searched, "C:\\searched.nrrd");
+#ifdef _DEBUG
   WriteDebug<TImage>(scoreImage, "C:\\scoreImage.nrrd");
+#endif // _DEBUG
   return bestIndex;
 }
 
@@ -1232,12 +1239,11 @@ MorphologicalContourInterpolator<TImage>
 
   this->DetermineSliceOrientations();
 
-  //merge all bounding boxes
-  if (m_BoundingBoxes.size() == 0)
+  if (m_BoundingBoxes.size() == 0) //empty input image
     {
-    this->GraftOutput(m_Output);
-    this->m_Output = ITK_NULLPTR;
-    return; //nothing to process
+	tempOut->Allocate(true);
+	CombineInputAndInterpolate(tempOut);
+    return;
     }
 
   if (m_Axis == -1) //interpolate along all axes
@@ -1274,6 +1280,12 @@ MorphologicalContourInterpolator<TImage>
         }
       }
 
+	if (perAxisInterpolates.size() == 0) //nothing to process
+	  {
+	  tempOut->Allocate(true);
+	  CombineInputAndInterpolate(tempOut);
+	  return;
+	  }
     if (perAxisInterpolates.size() == 1)
       {
       CombineInputAndInterpolate(perAxisInterpolates[0]);
