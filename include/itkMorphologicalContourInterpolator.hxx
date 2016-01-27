@@ -365,29 +365,29 @@ MorphologicalContourInterpolator<TImage>
 
   for (unsigned d = 0; d < TImage::ImageDimension; d++)
     {
-	if (!carry)
-	  {
+    if (!carry)
+      {
       iTrans[d] = translation[d] / 2;
-	  carry = translation[d] % 2;
-	  }
-	else if (translation[d] % 2 == 0)
-	  {
-	  iTrans[d] = translation[d] / 2;
-	  }
-	else //use carry
-	  {
-	  if (translation[d] > 0)
-	    {
-		iTrans[d] = translation[d] / 2 + 1;
-		}
-	  else
-	    {
-		iTrans[d] = translation[d] / 2 - 1;
-	    }
-	  carry = false;
-	  }
-	jTrans[d] = iTrans[d] - translation[d];
-	iRegion.SetIndex(d, iRegion.GetIndex()[d] + iTrans[d]);
+      carry = translation[d] % 2;
+      }
+    else if (translation[d] % 2 == 0)
+      {
+      iTrans[d] = translation[d] / 2;
+      }
+    else //use carry
+      {
+      if (translation[d] > 0)
+        {
+        iTrans[d] = translation[d] / 2 + 1;
+        }
+      else
+        {
+        iTrans[d] = translation[d] / 2 - 1;
+        }
+      carry = false;
+      }
+    jTrans[d] = iTrans[d] - translation[d];
+    iRegion.SetIndex(d, iRegion.GetIndex()[d] + iTrans[d]);
     jRegion.SetIndex(d, jRegion.GetIndex()[d] + jTrans[d]);
     jBottom[d] = jRegion.GetIndex()[d] + jRegion.GetSize(d) - 1;
     }
@@ -433,14 +433,14 @@ MorphologicalContourInterpolator<TImage>
   std::reverse(iSeq.begin(), iSeq.end()); //we want to start from i and end at intersection
   if (iSeq.size() < jSeq.size())
     {
-	iSeq.swap(jSeq); //swap so iSeq.size() >= jSeq.size()
+    iSeq.swap(jSeq); //swap so iSeq.size() >= jSeq.size()
     }
   float ratio = float(jSeq.size()) / iSeq.size();
-  std::vector<typename BoolImageType::Pointer> seq; 
+  std::vector<typename BoolImageType::Pointer> seq;
   for (unsigned x = 0; x < iSeq.size(); x++)
     {
     m_Or->SetInput(0, iSeq[x]);
-	unsigned xj = ratio*x;
+    unsigned xj = ratio*x;
     m_Or->SetInput(1, jSeq[xj]);
     //WriteDebug(iSeq[x], (std::string("C:\\iSeq") + char('a' + x) + ".nrrd").c_str());
     //WriteDebug(jSeq[xj], (std::string("C:\\jSeq") + char('a' + x) + ".nrrd").c_str());
@@ -523,7 +523,7 @@ typename TImage::IndexType translation)
 {
   //first convert iConn into binary mask
   MatchesID matchesID(iRegionId);
-  
+
   typedef UnaryFunctorImageFilter<TImage, BoolImageType, MatchesID> CastType;
   typename CastType::Pointer caster = CastType::New();
   caster->SetFunctor(matchesID);
@@ -590,7 +590,7 @@ typename TImage::IndexType translation)
     }
   ImageRegionConstIterator<BoolImageType> maskIt2(mask, iRegion);
   ImageRegionConstIteratorWithIndex<BoolImageType> jIt2(blobs[0], iRegion);
-  
+
   bool hollowedMaskEmpty;
   do //while hollowed mask is not empty
     {
@@ -738,7 +738,7 @@ IdentifierType MorphologicalContourInterpolator<TImage>
   std::vector<IdentifierType> counts(jRegionIds.size());
   for (int x = 0; x < jRegionIds.size(); x++)
     {
-	counts[x] = 0;
+    counts[x] = 0;
     }
   ImageRegionConstIterator<TImage> iIt(iConn, iRegion);
   ImageRegionConstIterator<TImage> jIt(jConn, jRegion);
@@ -750,7 +750,7 @@ IdentifierType MorphologicalContourInterpolator<TImage>
       typename PixelList::iterator res = std::find(jRegionIds.begin(), jRegionIds.end(), jVal);
       if (res != jRegionIds.end())
         {
-		++counts[res - jRegionIds.begin()];
+        ++counts[res - jRegionIds.begin()];
         }
       }
     ++iIt;
@@ -759,11 +759,11 @@ IdentifierType MorphologicalContourInterpolator<TImage>
   IdentifierType sum = 0;
   for (int x = 0; x < jRegionIds.size(); x++)
     {
-	if (counts[x] == 0)
-	  {
-	  return 0; //iConn must intersect all subregions of jConn
-	  }
-	sum += counts[x];
+    if (counts[x] == 0)
+      {
+      return 0; //iConn must intersect all subregions of jConn
+      }
+    sum += counts[x];
     }
   return sum;
 }
@@ -885,9 +885,9 @@ typename TImage::Pointer jConn, PixelList jRegionIds)
       maxScore=score;
       bestIndex = ind;
       }
-  
-    //we breadth this search 
-	if (!m_HeuristicAlignment || maxScore == 0 || score > maxScore*0.8)
+
+    //we breadth this search
+    if (!m_HeuristicAlignment || maxScore == 0 || score > maxScore*0.8)
       {
       for (unsigned d = 0; d < TImage::ImageDimension; d++)
         {
@@ -973,39 +973,39 @@ MorphologicalContourInterpolator<TImage>
     {
     if (iti.Get() != 0 || itj.Get() != 0)
       {
-	  uncleanPairs.insert(std::make_pair(iti.Get(), itj.Get()));
+      uncleanPairs.insert(std::make_pair(iti.Get(), itj.Get()));
       //std::cout << " iti:" << iti.GetIndex() << iti.Get() <<
       //  " itj:" << itj.GetIndex() << itj.Get() << std::endl;
-	  if (iti.Get() != 0 && itj.Get() != 0)
-	    {
-		unwantedPairs.insert(std::make_pair(0, itj.Get()));
-		unwantedPairs.insert(std::make_pair(iti.Get(), 0));
-	    }
+      if (iti.Get() != 0 && itj.Get() != 0)
+        {
+        unwantedPairs.insert(std::make_pair(0, itj.Get()));
+        unwantedPairs.insert(std::make_pair(iti.Get(), 0));
+        }
       }
     ++iti;
     ++itj;
     }
   std::set_difference(uncleanPairs.begin(), uncleanPairs.end(),
-	unwantedPairs.begin(), unwantedPairs.end(), std::inserter(pairs, pairs.end()));
- 
+    unwantedPairs.begin(), unwantedPairs.end(), std::inserter(pairs, pairs.end()));
+
   //first do extrapolation for components without overlaps
   typename PairSet::iterator p = pairs.begin();
   while (p!=pairs.end())
     {
-	if (p->second == 0)
+    if (p->second == 0)
       {
       Extrapolate(axis, out, label, i, j, iconn, p->first);
-	  pairs.erase(p++);
+      pairs.erase(p++);
       }
     else if (p->first == 0)
       {
-	  Extrapolate(axis, out, label, j, i, jconn, p->second);
-	  pairs.erase(p++);
+      Extrapolate(axis, out, label, j, i, jconn, p->second);
+      pairs.erase(p++);
       }
-	else
-	  {
-	  ++p;
-	  }
+    else
+      {
+      ++p;
+      }
     }
 
   //count ocurrances of each component
@@ -1056,7 +1056,7 @@ MorphologicalContourInterpolator<TImage>
 
       typename TImage::IndexType translation = Align(axis, jconn, p->second, iconn, regionIDs);
       Interpolate1toN(axis, out, label, j, i, jconn, p->second, iconn, regionIDs, translation);
-      
+
       typename PairSet::iterator rest = p;
       ++rest;
       while (rest != pairs.end())
@@ -1072,8 +1072,8 @@ MorphologicalContourInterpolator<TImage>
           ++rest;
           }
         }
-	  --iCounts[p->first];
-	  --jCounts[p->second];
+      --iCounts[p->first];
+      --jCounts[p->second];
       pairs.erase(p++);
       } //M-to-1
     else if (jCounts[p->second] == 1) //1-to-N
@@ -1104,8 +1104,8 @@ MorphologicalContourInterpolator<TImage>
           ++rest;
           }
         }
-	  --iCounts[p->first];
-	  --jCounts[p->second];
+      --iCounts[p->first];
+      --jCounts[p->second];
       pairs.erase(p++);
       } //1-to-N
     else
@@ -1173,7 +1173,7 @@ MorphologicalContourInterpolator<TImage>
       if (prev == it->second.end())
         {
         return; //nothing to do
-        }      
+        }
       typename SliceSetType::iterator next = it->second.begin();
       for (++next; next != it->second.end(); ++next)
         {
@@ -1229,7 +1229,7 @@ MorphologicalContourInterpolator<TImage>
   typename TImage::Pointer tempOut = TImage::New();
   tempOut->CopyInformation(m_Output);
   tempOut->SetRegions(m_Output->GetLargestPossibleRegion());
-  
+
   this->DetermineSliceOrientations();
 
   //merge all bounding boxes
@@ -1301,7 +1301,7 @@ MorphologicalContourInterpolator<TImage>
         typename TImage::PixelType val = iterators[i].Get();
         if (val != 0)
           {
-		  it.Set(val); //last written value stays
+          it.Set(val); //last written value stays
           }
         }
 

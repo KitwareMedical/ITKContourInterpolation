@@ -190,7 +190,7 @@ protected:
 
   typename TImage::Pointer RegionedConnectedComponents(const typename TImage::RegionType region,
     typename TImage::PixelType label, IdentifierType &objectCount);
-  
+
   /** seed and mask must cover the same region (size and index the same) */
   typename BoolImageType::Pointer Dilate1(typename BoolImageType::Pointer seed,
     typename BoolImageType::Pointer mask);
