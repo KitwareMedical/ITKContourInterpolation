@@ -10,7 +10,7 @@ add_executable(runFromIDE manualTest.cxx ${MorphologicalContourInterpolationTest
 target_link_libraries(runFromIDE ${MorphologicalContourInterpolation-Test_LIBRARIES})
 
 function(JustInputTest ImageName Ext)
-itk_add_test( NAME itkMorphologicalContourInterpolationTest_${ImageName}
+itk_add_test( NAME itkMorphologicalContourInterpolation_JustInputTest_${ImageName}
   COMMAND MorphologicalContourInterpolationTestDriver
   itkMorphologicalContourInterpolationTest
     DATA{Input/${ImageName}.${Ext}}
@@ -18,12 +18,25 @@ itk_add_test( NAME itkMorphologicalContourInterpolationTest_${ImageName}
     )
 endfunction()
 
+function(RegressionTest ImageName Ext)
+itk_add_test( NAME itkMorphologicalContourInterpolation_RegressionTest_${ImageName}
+  COMMAND MorphologicalContourInterpolationTestDriver
+  --compare DATA{Baseline/${ImageName}.${Ext}}
+            ${ITK_TEST_OUTPUT_DIR}/${ImageName}_interpolated.${Ext}
+  itkMorphologicalContourInterpolationTest
+    DATA{Input/${ImageName}.${Ext}}
+    ${ITK_TEST_OUTPUT_DIR}/${ImageName}_interpolated.${Ext}
+    )
+endfunction()
+
 # Handcrafted tests
-JustInputTest(Micro1 nrrd)
-JustInputTest(SimplestOneToOne nrrd)
-JustInputTest(OneToOne nrrd)
-JustInputTest(OneToThree nrrd)
-JustInputTest(ExtrapolationAppearing nrrd)
+RegressionTest(Empty nrrd)
+RegressionTest(NoSlices nrrd) #interpolation should not be invoked (output==input)
+RegressionTest(Micro1 nrrd)
+RegressionTest(SimplestOneToOne nrrd)
+RegressionTest(OneToOne nrrd)
+RegressionTest(OneToThree nrrd)
+RegressionTest(ExtrapolationAppearing nrrd)
 JustInputTest(DoubleTwoLabelBranching nrrd)
 JustInputTest(TwoAxisDoubleTwoLabelBranchingConflict nrrd)
 JustInputTest(ThreeAxisFourLabelConflict nrrd)
@@ -31,7 +44,7 @@ JustInputTest(AccidentalMiddleSliceSegmentation nrrd)
 JustInputTest(SevenLabels nrrd)
 JustInputTest(FullEnd nrrd)
 JustInputTest(ManyToMany16 nrrd)
-JustInputTest(ManyToMany nrrd)
+RegressionTest(ManyToMany nrrd)
 JustInputTest(GridSeg nrrd)
 
 # Paul's tests
