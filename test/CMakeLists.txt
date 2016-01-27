@@ -47,7 +47,6 @@ RegressionTest(OneToThree nrrd)
 RegressionTest(ExtrapolationAppearing nrrd)
 JustInputTest(DoubleTwoLabelBranching nrrd)
 JustInputTest(TwoAxisDoubleTwoLabelBranchingConflict nrrd)
-JustInputTest(ThreeAxisFourLabelConflict nrrd)
 JustInputTest(AccidentalMiddleSliceSegmentation nrrd)
 JustInputTest(SevenLabels nrrd)
 JustInputTest(FullEnd nrrd)
@@ -63,6 +62,17 @@ RegressionTest(GridSeg nrrd 2)
 RegressionTest(GridSeg2 nrrd 0)
 RegressionTest(GridSeg2 nrrd 1)
 RegressionTest(GridSeg2 nrrd 2)
+RegressionTest(ThreeAxisFourLabelConflict nrrd)
+RegressionTest(ThreeAxisFourLabelConflict nrrd 0)
+RegressionTest(ThreeAxisFourLabelConflict nrrd 1)
+RegressionTest(ThreeAxisFourLabelConflict nrrd 2)
+RegressionTest(ThreeAxisFourLabelConflict nrrd 0 0) # equals to _0
+RegressionTest(ThreeAxisFourLabelConflict nrrd 1 1)
+RegressionTest(ThreeAxisFourLabelConflict nrrd 2 3) # equals to _2
+RegressionTest(ThreeAxisFourLabelConflict nrrd 0 4) # equals to _0
+RegressionTest(ThreeAxisFourLabelConflict nrrd 1 2)
+RegressionTest(ThreeAxisFourLabelConflict nrrd 2 2) # does not modify image
+
 
 # Paul's tests
 JustInputTest(105769moving_resliced_to_fixedhz2_segmentation nii.gz)
@@ -74,5 +84,8 @@ JustInputTest(65239R_amygdala_fin nii.gz)
 #TODO: make different combinations of axis and label parameters
 
 # Long-running handcrafted tests
+RegressionTest(FaceRoI nrrd)
+RegressionTest(FaceRoI nrrd 0)
+RegressionTest(FaceRoI nrrd 1)
+RegressionTest(FaceRoI nrrd 2)
 JustInputTest(BigZ nrrd)
-JustInputTest(FaceRoI nrrd) #TODO: convert into Per axis/label regression test with FaceRoIFinished.nrrd as expected output
