@@ -39,7 +39,7 @@ namespace itk
 template< typename TImage >
 void WriteDebug(typename TImage::Pointer out, const char *filename)
 {
-  //return; //tests run much faster
+  return; //tests run much faster
   typedef ImageFileWriter<TImage> WriterType;
   typename WriterType::Pointer w = WriterType::New();
   w->SetInput(out);
@@ -97,6 +97,8 @@ MorphologicalContourInterpolator<TImage>
  :m_Label(0),
   m_Axis(-1),
   m_HeuristicAlignment(true),
+  m_MinAlignIters(10), //smaller of this and max pixel count of the search image
+  m_MaxAlignIters(256),
   m_LabeledSlices(TImage::ImageDimension) //initialize with empty sets
 {
   m_Or = OrType::New();
@@ -442,8 +444,10 @@ MorphologicalContourInterpolator<TImage>
     m_Or->SetInput(0, iSeq[x]);
     unsigned xj = ratio*x;
     m_Or->SetInput(1, jSeq[xj]);
+#ifdef _DEBUG
     WriteDebug(iSeq[x], (std::string("C:\\iSeq") + std::to_string(x) + ".nrrd").c_str());
     WriteDebug(jSeq[xj], (std::string("C:\\jSeq") + std::to_string(x) + ".nrrd").c_str());
+#endif // _DEBUG
     m_Or->GetOutput()->SetRegions(newRegion);
     m_Or->Update();
     seq.push_back(m_Or->GetOutput());
@@ -455,7 +459,9 @@ MorphologicalContourInterpolator<TImage>
   IdentifierType min = newRegion.GetNumberOfPixels();
   for (unsigned x = 0; x < iSeq.size(); x++)
     {
+#ifdef _DEBUG
     WriteDebug(seq[x], (std::string("C:\\seq") + std::to_string(x) + ".nrrd").c_str());
+#endif // _DEBUG
     IdentifierType iS = CardSymDifference(seq[x], iMask);
     IdentifierType jS = CardSymDifference(seq[x], jMask);
     IdentifierType xScore = iS >= jS ? iS - jS : jS - iS; //abs(iS-jS)
@@ -868,6 +874,7 @@ typename TImage::Pointer jConn, PixelList jRegionIds)
   searched->SetPixel(ind, true);
   IdentifierType score, maxScore = 0;
   typename TImage::IndexType bestIndex;
+  IdentifierType iter = 0, minIter = std::min(m_MinAlignIters, searchRegion.GetNumberOfPixels());
 
   //debug: construct and later fill the image with intersection scores
 #ifndef NDEBUG
@@ -878,6 +885,7 @@ typename TImage::Pointer jConn, PixelList jRegionIds)
 
   while (!uncomputed.empty())
     {
+    ++iter;
     ind = uncomputed.front();
     uncomputed.pop();
     score = Intersection(iConn, iRegionId, jConn, jRegionIds, ind);
@@ -892,7 +900,8 @@ typename TImage::Pointer jConn, PixelList jRegionIds)
       }
 
     //we breadth this search
-    if (!m_HeuristicAlignment || maxScore == 0 || score > maxScore*0.8)
+    if (!m_HeuristicAlignment || maxScore == 0 || iter<=minIter
+        || score > maxScore*0.9 && iter <= m_MaxAlignIters)
       {
       for (unsigned d = 0; d < TImage::ImageDimension; d++)
         {
