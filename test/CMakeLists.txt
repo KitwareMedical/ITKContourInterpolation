@@ -9,8 +9,8 @@ CreateTestDriver( MorphologicalContourInterpolation "${MorphologicalContourInter
 add_executable(runFromIDE manualTest.cxx ${MorphologicalContourInterpolationTests})
 target_link_libraries(runFromIDE ${MorphologicalContourInterpolation-Test_LIBRARIES})
 
-function(JustInputTest ImageName Ext) #optional: Axis Label
 # used to produce an output which is then taken as a baseline for a regression test
+function(JustInputTest ImageName Ext) #optional: Axis Label
   foreach(f ${ARGN}) #create unique test name
     set(optArgs "${optArgs}_${f}")
   endforeach()
@@ -90,7 +90,7 @@ RegressionTest(FaceRoI nrrd)
 RegressionTest(FaceRoI nrrd 0)
 RegressionTest(FaceRoI nrrd 1)
 RegressionTest(FaceRoI nrrd 2)
-JustInputTest(BigZ nrrd)
-JustInputTest(BigZ nrrd 0)
-JustInputTest(BigZ nrrd 1)
-JustInputTest(BigZ nrrd 2)
+RegressionTest(BigZ nrrd)
+RegressionTest(BigZ nrrd 0)
+RegressionTest(BigZ nrrd 1)
+RegressionTest(BigZ nrrd 2)
