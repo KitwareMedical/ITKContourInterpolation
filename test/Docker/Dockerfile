@@ -45,6 +45,7 @@ RUN git clone git://itk.org/ITK.git && \
   cd ITK-build && \
   cmake \
     -G Ninja \
+    -DCMAKE_CXX_FLAGS='-std=c++11' \
     -DCMAKE_INSTALL_PREFIX:PATH=/usr \
     -DBUILD_EXAMPLES:BOOL=OFF \
     -DBUILD_TESTING:BOOL=OFF \

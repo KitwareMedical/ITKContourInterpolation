@@ -12,6 +12,7 @@ cd /usr/src/ITKMorphologicalContourInterpolation-build || die "Could not cd into
 
 cmake \
   -G Ninja \
+  -DCMAKE_CXX_FLAGS='-std=c++11' \
   -DITK_DIR:PATH=/usr/src/ITK-build \
   -DCMAKE_BUILD_TYPE:STRING=Release \
   -DBUILDNAME:STRING=External-MorphologicalContourInterpolation \
