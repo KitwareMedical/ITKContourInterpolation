@@ -6,6 +6,7 @@ itk_module(MorphologicalContourInterpolation
     ITKCommon
     ITKBinaryMathematicalMorphology
     ITKIOImageBase # typename
+    ITKDistanceMap
   TEST_DEPENDS
     ITKTestKernel
   EXCLUDE_FROM_DEFAULT
