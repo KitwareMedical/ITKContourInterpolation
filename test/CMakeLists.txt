@@ -75,7 +75,6 @@ RegressionTest(ThreeAxisFourLabelConflict nrrd RD 0 4) # equals to _0
 RegressionTest(ThreeAxisFourLabelConflict nrrd RD 1 2)
 RegressionTest(ThreeAxisFourLabelConflict nrrd RD 2 2) # does not modify image
 
-
 # Paul's single axis tests
 RegressionTest(105769moving nii.gz RD) #defaults: all axes all labels
 RegressionTest(105769moving nii.gz RD 2) #axis 2
@@ -173,3 +172,11 @@ RegressionTest(FaceRoI nrrd RD)
 RegressionTest(FaceRoI nrrd RD 0)
 RegressionTest(FaceRoI nrrd RD 1)
 RegressionTest(FaceRoI nrrd RD 2)
+
+# Non-3D tests
+RegressionTest(TwoD png RD)
+RegressionTest(TwoD png RD -1 255) # same as regular
+RegressionTest(TwoD png RD 0) # same as regular
+RegressionTest(TwoD png RD -1 1) # does not modify image
+RegressionTest(TwoD png RD 1) # does not modify image
+RegressionTest(FourD nrrd RD)

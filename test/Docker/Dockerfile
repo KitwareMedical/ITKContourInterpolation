@@ -56,6 +56,7 @@ RUN git clone git://itk.org/ITK.git && \
     -DITK_USE_SYSTEM_LIBRARIES:BOOL=ON \
     -DModule_ITKBinaryMathematicalMorphology:BOOL=ON \
     -DModule_ITKTestKernel:BOOL=ON \
+    -DModule_ITKDistanceMap:BOOL=ON \
     ../ITK && \
   ninja && \
   find . -name '*.o' -delete

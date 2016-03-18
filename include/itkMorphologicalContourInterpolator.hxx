@@ -41,7 +41,7 @@
 namespace itk
 {
 template< typename TImage >
-void WriteDebug(typename TImage::Pointer out, const char *filename)
+void WriteDebug(itk::SmartPointer<TImage> out, const char *filename)
 {
   return; //tests run much faster
   typedef ImageFileWriter<TImage> WriterType;
@@ -59,12 +59,13 @@ void WriteDebug(typename TImage::Pointer out, const char *filename)
     }
 }
 
-void WriteDebug(Image<bool, 3>::Pointer out, const char *filename)
+template<unsigned int dim>
+void WriteDebug(itk::SmartPointer<Image<bool, dim>> out, const char *filename)
 {
-  typedef Image<bool, 3>                                 BoolImageType;
-  typedef Image<unsigned char, 3>                        ucharImageType;
+  typedef Image<bool, dim>                               BoolImageType;
+  typedef Image<unsigned char, dim>                      ucharImageType;
   typedef CastImageFilter<BoolImageType, ucharImageType> CastType;
-  CastType::Pointer caster = CastType::New();
+  typename CastType::Pointer caster = CastType::New();
   caster->SetNumberOfThreads(1); //otherwise conflicts with C++11 threads
   caster->SetInput(out);
   WriteDebug<ucharImageType>(caster->GetOutput(), filename);
@@ -289,8 +290,8 @@ MorphologicalContourInterpolator<TImage>
   phSlice->SetPixel(centroid, 1);
   jRegionIds.clear();
   jRegionIds.push_back(1);
-  //WriteDebug<TImage>(iConn, "C:\\iConn.nrrd");
-  //WriteDebug<TImage>(phSlice, "C:\\phSlice.nrrd");
+  //WriteDebug(iConn, "C:\\iConn.nrrd");
+  //WriteDebug(phSlice, "C:\\phSlice.nrrd");
   typename TImage::IndexType translation = Align(axis, iConn, iRegionId, phSlice, jRegionIds);
 
   //now translate the phantom slice for best alignment
@@ -507,12 +508,12 @@ MorphologicalContourInterpolator<TImage>
   ExpandRegion(newRegion, jRegion.GetIndex());
   ExpandRegion(newRegion, jBottom);
 
-  WriteDebug<TImage>(iConn, "C:\\iConn.nrrd");
-  WriteDebug<TImage>(jConn, "C:\\jConn.nrrd");
+  WriteDebug(iConn, "C:\\iConn.nrrd");
+  WriteDebug(jConn, "C:\\jConn.nrrd");
   typename TImage::Pointer iConnT = TranslateImage(iConn, iTrans, newRegion);
   typename TImage::Pointer jConnT = TranslateImage(jConn, jTrans, newRegion);
-  WriteDebug<TImage>(iConnT, "C:\\iConnT.nrrd");
-  WriteDebug<TImage>(jConnT, "C:\\jConnT.nrrd");
+  WriteDebug(iConnT, "C:\\iConnT.nrrd");
+  WriteDebug(jConnT, "C:\\jConnT.nrrd");
 
   //convert to binary masks
   MatchesID matchesIDi(iRegionId);
@@ -569,7 +570,7 @@ MorphologicalContourInterpolator<TImage>
       typename TImage::Pointer midConn = invCaster->GetOutput();
       //midConn->DisconnectPipeline(); //not needed?
 
-      //WriteDebug<TImage>(midConn, "C:\\midConn.nrrd");
+      //WriteDebug(midConn, "C:\\midConn.nrrd");
       PixelList regionIDs;
       regionIDs.push_back(1);
 
@@ -619,8 +620,8 @@ typename TImage::IndexType translation)
   caster->Update();
   typename BoolImageType::Pointer mask = caster->GetOutput();
   WriteDebug(mask, "C:\\mask.nrrd");
-  WriteDebug<TImage>(iConn, "C:\\iConn.nrrd");
-  WriteDebug<TImage>(jConn, "C:\\jConn.nrrd");
+  WriteDebug(iConn, "C:\\iConn.nrrd");
+  WriteDebug(jConn, "C:\\jConn.nrrd");
 
   typename TImage::RegionType iRegion, jRegion, newjRegion;
   iRegion = iConn->GetLargestPossibleRegion();
@@ -667,7 +668,7 @@ typename TImage::IndexType translation)
     ++jIt;
     ++belongInit;
     }
-  WriteDebug<TImage>(belongs, "C:\\belongs.nrrd");
+  WriteDebug(belongs, "C:\\belongs.nrrd");
 
   //prepare dilation filter
   iRegion = iConn->GetLargestPossibleRegion(); //expand to full i image
@@ -739,7 +740,7 @@ typename TImage::IndexType translation)
       ++jIt2;
       ++belongIt;
       }
-    WriteDebug<TImage>(belongs, "C:\\belongs.nrrd");
+    WriteDebug(belongs, "C:\\belongs.nrrd");
     } while (!hollowedMaskEmpty);
   blobs.clear(); // deallocates the images
 
@@ -1009,7 +1010,7 @@ typename TImage::Pointer jConn, PixelList jRegionIds)
     }
   //WriteDebug(searched, "C:\\searched.nrrd");
 #ifndef NDEBUG
-  WriteDebug<TImage>(scoreImage, "C:\\scoreImage.nrrd");
+  WriteDebug(scoreImage, "C:\\scoreImage.nrrd");
 #endif // NDEBUG
   return bestIndex;
 }
@@ -1264,8 +1265,8 @@ MorphologicalContourInterpolator<TImage>
         typename TImage::Pointer jconn = this->RegionedConnectedComponents(rj, it->first, xCount);
         jconn->DisconnectPipeline();
 
-        WriteDebug<TImage>(iconn, "C:\\iconn.nrrd");
-        WriteDebug<TImage>(jconn, "C:\\jconn.nrrd");
+        WriteDebug(iconn, "C:\\iconn.nrrd");
+        WriteDebug(jconn, "C:\\jconn.nrrd");
 
         if (*prev + 1 < *next) //only if they are not adjacent slices
           {
