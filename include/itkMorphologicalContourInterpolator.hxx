@@ -107,8 +107,8 @@ MorphologicalContourInterpolator<TImage>
   m_UseDistanceTransform(true),
   m_ThreadPool(nullptr),
   m_StopSpawning(false),
-  m_MinAlignIters(10), //smaller of this and max pixel count of the search image
-  m_MaxAlignIters(256),
+  m_MinAlignIters(pow(2, TImage::ImageDimension)), //smaller of this and pixel count of the search image
+  m_MaxAlignIters(pow(6, TImage::ImageDimension)), //bigger of this and root of pixel count of the search image
   m_LabeledSlices(TImage::ImageDimension) //initialize with empty sets
 {
   //set up pipeline for regioned connected components
@@ -954,10 +954,13 @@ typename TImage::Pointer jConn, PixelList jRegionIds)
   t0[axis] = ind[axis];
   uncomputed.push(t0); //no translation - guaranteed to find a non-zero intersection
   uncomputed.push(ind); //this introduces movement, and possibly has the same score
+  searched->SetPixel(t0, true);
   searched->SetPixel(ind, true);
   IdentifierType score, maxScore = 0;
   typename TImage::IndexType bestIndex;
-  IdentifierType iter = 0, minIter = std::min(m_MinAlignIters, searchRegion.GetNumberOfPixels());
+  IdentifierType iter = 0;
+  IdentifierType minIter = std::min(m_MinAlignIters, searchRegion.GetNumberOfPixels());
+  IdentifierType maxIter = std::max(m_MaxAlignIters, (IdentifierType)sqrt(searchRegion.GetNumberOfPixels()));
 
   //debug: construct and later fill the image with intersection scores
 #ifndef NDEBUG
@@ -968,7 +971,6 @@ typename TImage::Pointer jConn, PixelList jRegionIds)
 
   while (!uncomputed.empty())
     {
-    ++iter;
     ind = uncomputed.front();
     uncomputed.pop();
     score = Intersection(iConn, iRegionId, jConn, jRegionIds, ind);
@@ -984,7 +986,7 @@ typename TImage::Pointer jConn, PixelList jRegionIds)
 
     //we breadth this search
     if (!m_HeuristicAlignment || maxScore == 0 || iter<=minIter
-        || score > maxScore*0.9 && iter <= m_MaxAlignIters)
+        || score > maxScore*0.9 && iter <= maxIter)
       {
       for (unsigned d = 0; d < TImage::ImageDimension; d++)
         {
@@ -997,12 +999,14 @@ typename TImage::Pointer jConn, PixelList jRegionIds)
           {
           uncomputed.push(ind);
           searched->SetPixel(ind, true);
+          ++iter;
           }
         ind[d] += 2; //"right"
         if (searchRegion.IsInside(ind) && !searched->GetPixel(ind))
           {
           uncomputed.push(ind);
           searched->SetPixel(ind, true);
+          ++iter;
           }
         ind[d] -= 1; //return to initial
         }
