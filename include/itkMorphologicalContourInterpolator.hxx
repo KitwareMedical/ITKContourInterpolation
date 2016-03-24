@@ -25,7 +25,7 @@
 #include "itkImageAlgorithm.h"
 #include "itkUnaryFunctorImageFilter.h"
 #include "itkCastImageFilter.h"
-#include "itkFastChamferDistanceImageFilter.h"
+#include "itkSignedMaurerDistanceMapImageFilter.h"
 #include <utility>
 #include <algorithm>
 #include <queue>
@@ -304,7 +304,7 @@ MorphologicalContourInterpolator<TImage>
   phSlice->SetRegions(reg3);
   typename TImage::IndexType t0 = { 0 };
   t0[axis] = j - i;
-  Interpolate1to1(axis, out, label, i, j, iConn, iRegionId, phSlice, 1, t0);
+  Interpolate1to1(axis, out, label, i, j, iConn, iRegionId, phSlice, 1, t0, false);
 }
 
 
@@ -436,6 +436,19 @@ MorphologicalContourInterpolator<TImage>
 }
 
 
+template <typename TImage>
+itk::SmartPointer<TImage> MaurerDM(itk::SmartPointer<TImage> inImage)
+{
+    typedef itk::SignedMaurerDistanceMapImageFilter<TImage, TImage> FilterType;
+    thread_local typename FilterType::Pointer filter = FilterType::New();
+    filter->SetInput(inImage);
+    filter->SetUseImageSpacing(false);
+    filter->SetSquaredDistance(true);
+    filter->SetNumberOfThreads(1);
+    filter->Update();
+    return filter->GetOutput();
+}
+
 template< typename TImage >
 typename MorphologicalContourInterpolator<TImage>::BoolImageType::Pointer
 MorphologicalContourInterpolator<TImage>
@@ -466,7 +479,7 @@ MorphologicalContourInterpolator<TImage>
   typename TImage::IndexValueType i, typename TImage::IndexValueType j,
   typename TImage::Pointer iConn, typename TImage::PixelType iRegionId,
   typename TImage::Pointer jConn, typename TImage::PixelType jRegionId,
-  typename TImage::IndexType translation)
+  typename TImage::IndexType translation, bool recursive)
 {
   //translate iConn by t/2 and jConn by -t/2
   typename TImage::IndexType iTrans;
@@ -514,6 +527,47 @@ MorphologicalContourInterpolator<TImage>
   typename TImage::Pointer jConnT = TranslateImage(jConn, jTrans, newRegion);
   WriteDebug(iConnT, "C:\\iConnT.nrrd");
   WriteDebug(jConnT, "C:\\jConnT.nrrd");
+
+  if (!recursive) //reduce bounding box so we deal with less pixels
+    {
+    typename TImage::IndexType minInd = newRegion.GetIndex() + newRegion.GetSize();
+    typename TImage::IndexType maxInd = newRegion.GetIndex();
+    ImageRegionConstIteratorWithIndex<TImage> iIt(iConnT, newRegion);
+    ImageRegionConstIterator<TImage> jIt(jConnT, newRegion);
+
+    while (!iIt.IsAtEnd())
+      {
+      if (iIt.Get() || jIt.Get())
+        {
+        typename TImage::IndexType ind = iIt.GetIndex();
+        for (int d = 0; d < TImage::ImageDimension; d++)
+          {
+          if (ind[d]<minInd[d])
+            {
+            minInd[d] = ind[d];
+            }
+          if (ind[d]>maxInd[d])
+            {
+            maxInd[d] = ind[d];
+            }
+          }        
+        }
+      ++iIt;
+      ++jIt;
+      }
+
+    newRegion.SetIndex(minInd);
+    for (int d = 0; d < TImage::ImageDimension; d++)
+      {
+      newRegion.SetSize(d, maxInd[d] - minInd[d] + 1);
+      }
+    typename TImage::IndexType t0;
+    t0.Fill(0);
+    iConnT = TranslateImage(iConnT, t0, newRegion);
+    jConnT = TranslateImage(jConnT, t0, newRegion);
+    }
+  WriteDebug(iConnT, "C:\\iConnTb.nrrd");
+  WriteDebug(jConnT, "C:\\jConnTb.nrrd");
 
   //convert to binary masks
   MatchesID matchesIDi(iRegionId);
@@ -581,18 +635,18 @@ MorphologicalContourInterpolator<TImage>
         {
         m_ThreadPool->enqueue(
           &MorphologicalContourInterpolator<TImage>::Interpolate1to1,
-          this, axis, out, label, i, mid, iConn, iRegionId, midConn, 1, iTrans);
-        Interpolate1to1(axis, out, label, j, mid, jConn, jRegionId, midConn, 1, jTrans);
+          this, axis, out, label, i, mid, iConn, iRegionId, midConn, 1, iTrans, true);
+        Interpolate1to1(axis, out, label, j, mid, jConn, jRegionId, midConn, 1, jTrans, true);
         }
       else //sequential
       {
         if (first)
           {
-          Interpolate1to1(axis, out, label, i, mid, iConn, iRegionId, midConn, 1, iTrans);
+          Interpolate1to1(axis, out, label, i, mid, iConn, iRegionId, midConn, 1, iTrans, true);
           }
         if (second)
           {
-          Interpolate1to1(axis, out, label, j, mid, jConn, jRegionId, midConn, 1, jTrans);
+          Interpolate1to1(axis, out, label, j, mid, jConn, jRegionId, midConn, 1, jTrans, true);
           }
       }
     }
@@ -768,7 +822,7 @@ typename TImage::IndexType translation)
   //make n 1-to-1 interpolations
   for (unsigned x = 0; x < jRegionIds.size(); x++)
     {
-    Interpolate1to1(axis, out, label, i, j, conns[x], iRegionId, jConn, jRegionIds[x], translation);
+    Interpolate1to1(axis, out, label, i, j, conns[x], iRegionId, jConn, jRegionIds[x], translation, false);
     //TODO: call sequence construction directly from here!
     }
 }
@@ -1106,7 +1160,7 @@ MorphologicalContourInterpolator<TImage>
       PixelList regionIDs;
       regionIDs.push_back(p->second);
       typename TImage::IndexType translation = Align(axis, iconn, p->first, jconn, regionIDs);
-      Interpolate1to1(axis, out, label, i, j, iconn, p->first, jconn, p->second, translation);
+      Interpolate1to1(axis, out, label, i, j, iconn, p->first, jconn, p->second, translation, false);
       iCounts.erase(p->first);
       jCounts.erase(p->second);
       pairs.erase(p++);
