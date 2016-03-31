@@ -120,6 +120,7 @@ MorphologicalContourInterpolator<TImage>
 {
   //set up pipeline for regioned connected components
   m_RoI = RoiType::New();
+  m_RoI->SetDirectionCollapseToIdentity();
   m_Binarizer = BinarizerType::New();
   m_Binarizer->SetInput(m_RoI->GetOutput());
   m_ConnectedComponents = ConnectedComponentsType::New();
@@ -160,18 +161,19 @@ MorphologicalContourInterpolator<TImage>
 
 
 template< typename TImage >
+template< typename T2 >
 void
 MorphologicalContourInterpolator<TImage>
-::ExpandRegion(typename TImage::RegionType &region, typename TImage::IndexType index)
+::ExpandRegion(typename T2::RegionType &region, typename T2::IndexType index)
 {
-  for (unsigned int a = 0; a < TImage::ImageDimension; ++a)
+  for (unsigned int a = 0; a < T2::ImageDimension; ++a)
     {
     if (region.GetIndex(a) > index[a])
       {
       region.SetSize(a, region.GetSize(a) + region.GetIndex(a) - index[a]);
       region.SetIndex(a, index[a]);
       }
-    else if (region.GetIndex(a) + (typename TImage::IndexValueType)region.GetSize(a) <= index[a])
+    else if (region.GetIndex(a) + (typename T2::IndexValueType)region.GetSize(a) <= index[a])
       {
       region.SetSize(a, index[a] - region.GetIndex(a) + 1);
       }
@@ -213,7 +215,7 @@ MorphologicalContourInterpolator<TImage>
         = m_BoundingBoxes.insert(std::make_pair(val, boundingBox1));
       if (!resBB.second) //include this index in existing BB
         {
-        ExpandRegion(resBB.first->second, ind);
+        ExpandRegion<TImage>(resBB.first->second, ind);
         }
 
       std::pair<typename OrientationsType::iterator, bool> res
@@ -266,74 +268,64 @@ void
 MorphologicalContourInterpolator<TImage>
 ::Extrapolate(int axis, TImage *out, typename TImage::PixelType label,
   typename TImage::IndexValueType i, typename TImage::IndexValueType j,
-  typename TImage::Pointer iConn, typename TImage::PixelType iRegionId)
+  typename SliceType::Pointer iConn, typename TImage::PixelType iRegionId)
 {
   PixelList jRegionIds;
   jRegionIds.push_back(iRegionId);
-  typename TImage::IndexType centroid = Centroid(iConn, jRegionIds);
-  centroid[axis] = j;
+  typename SliceType::IndexType centroid = Centroid(iConn, jRegionIds);
 
-  typename TImage::RegionType reg3;
-  typename TImage::SizeType size;
+  typename SliceType::RegionType reg3;
+  typename SliceType::SizeType size;
   size.Fill(3);
-  size[axis] = 1;
   reg3.SetSize(size);
 
-  typename TImage::IndexType phIndex;
-  for (unsigned d = 0; d < TImage::ImageDimension; d++)
+  typename SliceType::IndexType phIndex;
+  for (unsigned d = 0; d < SliceType::ImageDimension; d++)
     {
     phIndex[d] = centroid.GetIndex()[d] - 1;
     }
-  phIndex[axis] = j;
   reg3.SetIndex(phIndex);
 
   //create a phantom small slice centered around centroid
-  typename TImage::Pointer phSlice = TImage::New();
+  typename SliceType::Pointer phSlice = SliceType::New();
   phSlice->CopyInformation(iConn);
   phSlice->SetRegions(reg3);
   phSlice->Allocate(true);
 
   //add a phantom point to the center of a newly constructed slice
-  phSlice->SetPixel(centroid, 1);
-  jRegionIds.clear();
-  jRegionIds.push_back(1);
+  phSlice->SetPixel(centroid, iRegionId);
   //WriteDebug(iConn, "C:\\iConn.nrrd");
   //WriteDebug(phSlice, "C:\\phSlice.nrrd");
-  typename TImage::IndexType translation = Align(axis, iConn, iRegionId, phSlice, jRegionIds);
+  
+  //do alignment in case the iShape is concave and centroid is not within the iShape
+  typename SliceType::IndexType translation = Align(iConn, iRegionId, phSlice, jRegionIds);
 
   //now translate the phantom slice for best alignment
-  for (unsigned d = 0; d < TImage::ImageDimension; d++)
+  for (unsigned d = 0; d < SliceType::ImageDimension; d++)
   {
       phIndex[d] -= translation[d];
   }
-  phIndex[axis] = j;
   reg3.SetIndex(phIndex);
   phSlice->SetRegions(reg3);
-  typename TImage::IndexType t0 = { 0 };
-  t0[axis] = j - i;
-  Interpolate1to1(axis, out, label, i, j, iConn, iRegionId, phSlice, 1, t0, false);
+  typename SliceType::IndexType t0 = { 0 };
+  Interpolate1to1(axis, out, label, i, j, iConn, iRegionId, phSlice, iRegionId, t0, false);
 }
 
 
 template<typename TImage>
-template<typename T2>
-SmartPointer<T2>
+typename MorphologicalContourInterpolator<TImage>::BoolSliceType::Pointer
 MorphologicalContourInterpolator<TImage>
-::Dilate1(SmartPointer<T2> seed, SmartPointer<T2> mask, bool useBall, int axis)
+::Dilate1(typename BoolSliceType::Pointer seed, typename BoolSliceType::Pointer mask)
 {
   //set up structuring element for dilation
-  typedef Size<T2::ImageDimension> SizeType;
+  typedef Size<BoolSliceType::ImageDimension> SizeType;
   SizeType size;
   size.Fill(1);
-  if (axis >= 0)
-    {
-    size[axis] = 0;
-    }
 
-  typedef BinaryCrossStructuringElement<typename T2::PixelType, T2::ImageDimension> CrossStructuringElementType;
-  typedef BinaryBallStructuringElement<typename T2::PixelType, T2::ImageDimension> BallStructuringElementType;
-  typedef BinaryDilateImageFilter<T2, T2, CrossStructuringElementType> CrossDilateType;
-  typedef BinaryDilateImageFilter<T2, T2, BallStructuringElementType> BallDilateType;
+  typedef BinaryCrossStructuringElement<typename BoolSliceType::PixelType, BoolSliceType::ImageDimension> CrossStructuringElementType;
+  typedef BinaryBallStructuringElement<typename BoolSliceType::PixelType, BoolSliceType::ImageDimension> BallStructuringElementType;
+  typedef BinaryDilateImageFilter<BoolSliceType, BoolSliceType, CrossStructuringElementType> CrossDilateType;
+  typedef BinaryDilateImageFilter<BoolSliceType, BoolSliceType, BallStructuringElementType> BallDilateType;
 
   thread_local typename CrossDilateType::Pointer m_CrossDilator = CrossDilateType::New();
   m_CrossDilator->SetNumberOfThreads(1); //otherwise conflicts with C++11 threads
@@ -350,8 +342,8 @@ MorphologicalContourInterpolator<TImage>
   m_BallDilator->SetKernel(m_BallStructuringElement);
   //TODO: keep structuring element and dilator per axis instead of per thread?
 
-  typename T2::Pointer temp;
-  if (useBall)
+  typename BoolSliceType::Pointer temp;
+  if (m_UseBallStructuringElement)
     {
     m_BallDilator->SetInput(seed);
     m_BallDilator->GetOutput()->SetRegions(seed->GetRequestedRegion());
@@ -368,14 +360,14 @@ MorphologicalContourInterpolator<TImage>
   temp->DisconnectPipeline();
   //temp->SetRegions(mask->GetLargestPossibleRegion()); //not needed when seed and mask have same regions
 
-  typedef AndImageFilter<T2, T2, T2> AndFilterType;
+  typedef AndImageFilter<BoolSliceType, BoolSliceType, BoolSliceType> AndFilterType;
   thread_local typename AndFilterType::Pointer m_And = AndFilterType::New();
   m_And->SetNumberOfThreads(1); //otherwise conflicts with C++11 threads
   m_And->SetInput(0, mask);
   m_And->SetInput(1, temp);
   m_And->GetOutput()->SetRegions(seed->GetRequestedRegion());
   m_And->Update();
-  typename T2::Pointer result = m_And->GetOutput();
+  typename BoolSliceType::Pointer result = m_And->GetOutput();
   result->DisconnectPipeline();
   //WriteDebug(seed, "C:\\seed.nrrd");
   //WriteDebug(mask, "C:\\mask.nrrd");
@@ -389,7 +381,7 @@ template< typename TImage >
 std::vector<typename MorphologicalContourInterpolator<TImage>::BoolSliceType::Pointer>
 MorphologicalContourInterpolator<TImage>
 ::GenerateDilationSequence(
-  typename BoolSliceType::Pointer begin, typename BoolSliceType::Pointer end, int axis)
+  typename BoolSliceType::Pointer begin, typename BoolSliceType::Pointer end)
 {
   //typedef Testing::HashImageFilter<BoolSliceType> HashType;
   //HashType::Pointer hasher = HashType::New();
@@ -397,11 +389,11 @@ MorphologicalContourInterpolator<TImage>
   //std::vector<std::string> hashes;
   //TODO: optimization: replace ImagesEqual call with hash comparison?
   std::vector<typename BoolSliceType::Pointer> seq;
-  seq.push_back(Dilate1(begin, end, m_UseBallStructuringElement, -1));
+  seq.push_back(Dilate1(begin, end));
   do
     {
     seq.back()->DisconnectPipeline();
-    seq.push_back(Dilate1(seq.back(), end, m_UseBallStructuringElement, -1));
+    seq.push_back(Dilate1(seq.back(), end));
     } while (!ImagesEqual<BoolSliceType>(seq.back(), seq[seq.size() - 2]));
   seq.pop_back(); //remove duplicate image
   return seq;
@@ -414,8 +406,10 @@ MorphologicalContourInterpolator<TImage>
 ::FindMedianImageDilations(int axis, typename BoolSliceType::Pointer intersection,
   typename BoolSliceType::Pointer iMask, typename BoolSliceType::Pointer jMask)
 {
-  std::vector<typename BoolSliceType::Pointer> iSeq = GenerateDilationSequence(intersection, iMask, axis);
-  std::vector<typename BoolSliceType::Pointer> jSeq = GenerateDilationSequence(intersection, jMask, axis);
+  std::vector<typename BoolSliceType::Pointer> iSeq
+    = GenerateDilationSequence(intersection, iMask);
+  std::vector<typename BoolSliceType::Pointer> jSeq
+    = GenerateDilationSequence(intersection, jMask);
   std::reverse(iSeq.begin(), iSeq.end()); //we want to start from i and end at intersection
   if (iSeq.size() < jSeq.size())
     {
@@ -434,8 +428,8 @@ MorphologicalContourInterpolator<TImage>
     unsigned xj = ratio*x;
     m_Or->SetInput(1, jSeq[xj]);
 #ifdef _DEBUG
-    WriteDebug(iSeq[x], (std::string("C:\\iSeq") + std::to_string(x) + ".nrrd").c_str());
-    WriteDebug(jSeq[xj], (std::string("C:\\jSeq") + std::to_string(x) + ".nrrd").c_str());
+    //WriteDebug(iSeq[x], (std::string("C:\\iSeq") + std::to_string(x) + ".nrrd").c_str());
+    //WriteDebug(jSeq[xj], (std::string("C:\\jSeq") + std::to_string(x) + ".nrrd").c_str());
 #endif // _DEBUG
     m_Or->GetOutput()->SetRegions(iMask->GetRequestedRegion());
     m_Or->Update();
@@ -449,7 +443,7 @@ MorphologicalContourInterpolator<TImage>
   for (unsigned x = 0; x < iSeq.size(); x++)
     {
 #ifdef _DEBUG
-    WriteDebug(seq[x], (std::string("C:\\seq") + std::to_string(x) + ".nrrd").c_str());
+    //WriteDebug(seq[x], (std::string("C:\\seq") + std::to_string(x) + ".nrrd").c_str());
 #endif // _DEBUG
     IdentifierType iS = CardSymDifference(seq[x], iMask);
     IdentifierType jS = CardSymDifference(seq[x], jMask);
@@ -594,21 +588,21 @@ MorphologicalContourInterpolator<TImage>
 
 
 template<typename TImage>
-typename TImage::RegionType
+typename MorphologicalContourInterpolator<TImage>::SliceType::RegionType
 MorphologicalContourInterpolator<TImage>::
-BoundingBox(itk::SmartPointer<TImage> image)
+BoundingBox(itk::SmartPointer<SliceType> image)
 {
-  typename TImage::RegionType newRegion = image->GetLargestPossibleRegion();
-  typename TImage::IndexType minInd = newRegion.GetIndex() + newRegion.GetSize();
-  typename TImage::IndexType maxInd = newRegion.GetIndex();
-  ImageRegionConstIteratorWithIndex<TImage> iIt(image, newRegion);
+  typename SliceType::RegionType newRegion = image->GetLargestPossibleRegion();
+  typename SliceType::IndexType minInd = newRegion.GetIndex() + newRegion.GetSize();
+  typename SliceType::IndexType maxInd = newRegion.GetIndex();
+  ImageRegionConstIteratorWithIndex<SliceType> iIt(image, newRegion);
 
   while (!iIt.IsAtEnd())
     {
     if (iIt.Get())
       {
-      typename TImage::IndexType ind = iIt.GetIndex();
-      for (int d = 0; d < TImage::ImageDimension; d++)
+      typename SliceType::IndexType ind = iIt.GetIndex();
+      for (int d = 0; d < SliceType::ImageDimension; d++)
         {
         if (ind[d]<minInd[d])
           {
@@ -624,7 +618,7 @@ BoundingBox(itk::SmartPointer<TImage> image)
     }
 
   newRegion.SetIndex(minInd);
-  for (int d = 0; d < TImage::ImageDimension; d++)
+  for (int d = 0; d < SliceType::ImageDimension; d++)
     {
     newRegion.SetSize(d, maxInd[d] - minInd[d] + 1);
     }
@@ -636,19 +630,19 @@ void
 MorphologicalContourInterpolator<TImage>
 ::Interpolate1to1(int axis, TImage *out, typename TImage::PixelType label,
   typename TImage::IndexValueType i, typename TImage::IndexValueType j,
-  typename TImage::Pointer iConn, typename TImage::PixelType iRegionId,
-  typename TImage::Pointer jConn, typename TImage::PixelType jRegionId,
-  typename TImage::IndexType translation, bool recursive)
+  typename SliceType::Pointer iConn, typename TImage::PixelType iRegionId,
+  typename SliceType::Pointer jConn, typename TImage::PixelType jRegionId,
+  typename SliceType::IndexType translation, bool recursive)
 {
   //translate iConn by t/2 and jConn by -t/2
-  typename TImage::IndexType iTrans;
-  typename TImage::IndexType jTrans;
-  typename TImage::RegionType iRegion = iConn->GetLargestPossibleRegion();
-  typename TImage::RegionType jRegion = jConn->GetLargestPossibleRegion();
-  typename TImage::IndexType jBottom = jRegion.GetIndex();
+  typename SliceType::IndexType iTrans;
+  typename SliceType::IndexType jTrans;
+  typename SliceType::RegionType iRegion = iConn->GetLargestPossibleRegion();
+  typename SliceType::RegionType jRegion = jConn->GetLargestPossibleRegion();
+  typename SliceType::IndexType jBottom = jRegion.GetIndex();
   bool carry = false;
 
-  for (unsigned d = 0; d < TImage::ImageDimension; d++)
+  for (unsigned d = 0; d < SliceType::ImageDimension; d++)
     {
     if (!carry)
       {
@@ -676,58 +670,46 @@ MorphologicalContourInterpolator<TImage>
     jRegion.SetIndex(d, jRegion.GetIndex()[d] + jTrans[d]);
     jBottom[d] = jRegion.GetIndex()[d] + jRegion.GetSize(d) - 1;
     }
-  typename TImage::RegionType newRegion = iRegion;
-  ExpandRegion(newRegion, jRegion.GetIndex());
-  ExpandRegion(newRegion, jBottom);
+  typename SliceType::RegionType newRegion = iRegion;
+  ExpandRegion<SliceType>(newRegion, jRegion.GetIndex());
+  ExpandRegion<SliceType>(newRegion, jBottom);
+  typename SliceType::IndexValueType mid = (i + j + (carry ? 1 : 0)) / 2; //index of middle slice
 
   WriteDebug(iConn, "C:\\iConn.nrrd");
   WriteDebug(jConn, "C:\\jConn.nrrd");
-  typename TImage::Pointer iConnT = TranslateImage(iConn, iTrans, newRegion);
-  typename TImage::Pointer jConnT = TranslateImage(jConn, jTrans, newRegion);
+  typename SliceType::Pointer iConnT = TranslateImage(iConn, iTrans, newRegion);
+  typename SliceType::Pointer jConnT = TranslateImage(jConn, jTrans, newRegion);
   WriteDebug(iConnT, "C:\\iConnT.nrrd");
   WriteDebug(jConnT, "C:\\jConnT.nrrd");
 
   if (!recursive) //reduce newRegion to bounding box so we deal with less pixels
     {
     newRegion = BoundingBox(iConnT);
-    typename TImage::RegionType jBB = BoundingBox(jConnT);
-    typename TImage::IndexType i2 = jBB.GetIndex();
-    ExpandRegion(newRegion, i2);
-    for (int d = 0; d < TImage::ImageDimension; d++)
+    typename SliceType::RegionType jBB = BoundingBox(jConnT);
+    typename SliceType::IndexType i2 = jBB.GetIndex();
+    ExpandRegion<SliceType>(newRegion, i2);
+    for (int d = 0; d < SliceType::ImageDimension; d++)
       {
       i2[d] += jBB.GetSize(d) - 1;
       }
-    ExpandRegion(newRegion, i2);
+    ExpandRegion<SliceType>(newRegion, i2);
   }
 
-  //reduce dimension and convert to binary masks
-  //start by calculating the correction region (TODO: avoid actual extraction)
-  typename TImage::RegionType exRegion = newRegion;
-  exRegion.SetSize(axis, 0);
-  typedef ExtractImageFilter<TImage, SliceType> ExtractorType;
-  thread_local typename ExtractorType::Pointer extractor = ExtractorType::New();
-  extractor->SetDirectionCollapseToIdentity();
-  extractor->SetExtractionRegion(exRegion);
-  extractor->SetInput(iConnT);
-  extractor->UpdateLargestPossibleRegion();
-  typename SliceType::Pointer slice = extractor->GetOutput();
-
-  //create and allocate slice images
+  //create and allocate slice binary masks
   typename BoolSliceType::Pointer iSlice = BoolSliceType::New();
-  typename BoolSliceType::RegionType sliceRegion = slice->GetRequestedRegion();
-  iSlice->CopyInformation(slice);
-  iSlice->SetRegions(sliceRegion);
+  iSlice->CopyInformation(iConnT);
+  iSlice->SetRegions(newRegion);
   iSlice->Allocate(true);
   typename BoolSliceType::Pointer jSlice = BoolSliceType::New();
-  jSlice->CopyInformation(slice);
-  jSlice->SetRegions(sliceRegion);
+  jSlice->CopyInformation(jConnT);
+  jSlice->SetRegions(newRegion);
   jSlice->Allocate(true);
 
   //convert to binary by iteration
-  ImageRegionConstIterator<TImage> iIt(iConnT, newRegion);
-  ImageRegionConstIterator<TImage> jIt(jConnT, newRegion);
-  ImageRegionIterator<BoolSliceType> ibIt(iSlice, sliceRegion);
-  ImageRegionIterator<BoolSliceType> jbIt(jSlice, sliceRegion);
+  ImageRegionConstIterator<SliceType> iIt(iConnT, newRegion);
+  ImageRegionConstIterator<SliceType> jIt(jConnT, newRegion);
+  ImageRegionIterator<BoolSliceType> ibIt(iSlice, newRegion);
+  ImageRegionIterator<BoolSliceType> jbIt(jSlice, newRegion);
   while (!iIt.IsAtEnd())
     {
     if (iIt.Get() == iRegionId)
@@ -770,31 +752,47 @@ MorphologicalContourInterpolator<TImage>
 
   //finally write it out into the output image pointer
   typename TImage::RegionType outRegion = m_Input->GetLargestPossibleRegion();
-  typename TImage::IndexType t0 = { 0 };
-  IntersectionRegions(t0, outRegion, newRegion);
-  //newRegion possibly shrunk, copy it into sliceRegion
+  typename SliceType::RegionType sliceRegion;
   for (int d = 0; d < TImage::ImageDimension - 1; d++)
     {
     if (d<axis)
       {
-      sliceRegion.SetIndex(d, newRegion.GetIndex(d));
-      sliceRegion.SetSize(d, newRegion.GetSize(d));
+      sliceRegion.SetIndex(d, outRegion.GetIndex(d));
+      sliceRegion.SetSize(d, outRegion.GetSize(d));
       }
     else
       {
-      sliceRegion.SetIndex(d, newRegion.GetIndex(d + 1));
-      sliceRegion.SetSize(d, newRegion.GetSize(d + 1));
+      sliceRegion.SetIndex(d, outRegion.GetIndex(d + 1));
+      sliceRegion.SetSize(d, outRegion.GetSize(d + 1));
       }
     }
+  typename SliceType::IndexType t0 = { 0 }; //no translation
+  IntersectionRegions(t0, sliceRegion, newRegion); //clips new region to output region
+  //sliceRegion possibly shrunk, copy it into outRegion
+  for (int d = 0; d < TImage::ImageDimension - 1; d++)
+    {
+    if (d<axis)
+      {
+      outRegion.SetIndex(d, sliceRegion.GetIndex(d));
+      outRegion.SetSize(d, sliceRegion.GetSize(d));
+      }
+    else
+      {
+      outRegion.SetIndex(d + 1, sliceRegion.GetIndex(d));
+      outRegion.SetSize(d + 1, sliceRegion.GetSize(d));
+      }
+    }
+  outRegion.SetIndex(axis, mid);
+  outRegion.SetSize(axis, 1);
 
-  typename TImage::Pointer midConn = TImage::New();
+  typename SliceType::Pointer midConn = SliceType::New();
   midConn->CopyInformation(iConnT);
   midConn->SetRegions(newRegion);
   midConn->Allocate(true);
 
-  ImageRegionConstIterator<BoolSliceType> seqIt(median, sliceRegion);
-  ImageRegionIterator<TImage> outIt(out, newRegion);
-  ImageRegionIterator<TImage> midIt(midConn, newRegion);
+  ImageRegionConstIterator<BoolSliceType> seqIt(median, newRegion);
+  ImageRegionIterator<TImage> outIt(out, outRegion);
+  ImageRegionIterator<SliceType> midIt(midConn, newRegion);
   while (!outIt.IsAtEnd())
     {
     if (seqIt.Get())
@@ -809,7 +807,6 @@ MorphologicalContourInterpolator<TImage>
   WriteDebug(midConn, "C:\\midConn.nrrd");
 
   //recurse if needed
-  typename TImage::IndexValueType mid = newRegion.GetIndex()[axis];
   if (abs(i - j) > 2)
     {
       PixelList regionIDs;
@@ -846,35 +843,47 @@ void
 MorphologicalContourInterpolator<TImage>
 ::Interpolate1toN(int axis, TImage *out, typename TImage::PixelType label,
 typename TImage::IndexValueType i, typename TImage::IndexValueType j,
-typename TImage::Pointer iConn, typename TImage::PixelType iRegionId,
-typename TImage::Pointer jConn, PixelList jRegionIds,
-typename TImage::IndexType translation)
+typename SliceType::Pointer iConn, typename TImage::PixelType iRegionId,
+typename SliceType::Pointer jConn, PixelList jRegionIds,
+typename SliceType::IndexType translation)
 {
   //first convert iConn into binary mask
-  MatchesID matchesID(iRegionId);
+  class MatchesID
+  {
+    typename TImage::PixelType m_ID;
+  public:
+    MatchesID(){}
+    MatchesID(typename TImage::PixelType id) :m_ID(id){}
+    bool operator!=(const MatchesID & other){ return m_ID != other.m_ID; }
+    bool operator==(const MatchesID & other){ return m_ID == other.m_ID; }
+    inline bool operator()(const typename TImage::PixelType & val) const
+    {
+      return val == m_ID;
+    }
+  } matchesID(iRegionId);
 
-  typedef UnaryFunctorImageFilter<TImage, BoolImageType, MatchesID> CastType;
+  typedef UnaryFunctorImageFilter<SliceType, BoolSliceType, MatchesID> CastType;
   typename CastType::Pointer caster = CastType::New();
   caster->SetNumberOfThreads(1); //otherwise conflicts with C++11 threads
   caster->SetFunctor(matchesID);
   caster->SetInput(iConn);
   caster->Update();
-  typename BoolImageType::Pointer mask = caster->GetOutput();
+  typename BoolSliceType::Pointer mask = caster->GetOutput();
   //WriteDebug(mask, "C:\\mask.nrrd");
-  //WriteDebug(iConn, "C:\\iConn.nrrd");
-  //WriteDebug(jConn, "C:\\jConn.nrrd");
+  WriteDebug(iConn, "C:\\iConn.nrrd");
+  WriteDebug(jConn, "C:\\jConn.nrrd");
 
-  typename TImage::RegionType iRegion, jRegion, newjRegion;
+  typename SliceType::RegionType iRegion, jRegion, newjRegion;
   iRegion = iConn->GetLargestPossibleRegion();
   jRegion = jConn->GetLargestPossibleRegion();
   newjRegion = jRegion;
   newjRegion.SetSize(iRegion.GetSize());
 
   //construct n empty images
-  std::vector<typename BoolImageType::Pointer> blobs;
+  std::vector<typename BoolSliceType::Pointer> blobs;
   for (unsigned x = 0; x < jRegionIds.size(); x++)
     {
-    typename BoolImageType::Pointer temp = BoolImageType::New();
+    typename BoolSliceType::Pointer temp = BoolSliceType::New();
     temp->CopyInformation(jConn);
     temp->SetRegions(iRegion);
     temp->Allocate(true);
@@ -882,15 +891,15 @@ typename TImage::IndexType translation)
     }
 
   //fill the n images with intersections - these are seeds
-  typename TImage::Pointer belongs = TImage::New();
+  typename SliceType::Pointer belongs = SliceType::New();
   belongs->CopyInformation(mask);
   belongs->SetRegions(iRegion);
   belongs->Allocate(true); //initialize to zero (false)
-  ImageRegionIterator<TImage> belongIt(belongs, iRegion);
+  ImageRegionIterator<SliceType> belongIt(belongs, iRegion);
   IntersectionRegions(translation, iRegion, jRegion);
-  ImageRegionConstIterator<BoolImageType> maskIt(mask, iRegion);
-  ImageRegionConstIteratorWithIndex<TImage> jIt(jConn, jRegion);
-  ImageRegionIterator<TImage> belongInit(belongs, iRegion);
+  ImageRegionConstIterator<BoolSliceType> maskIt(mask, iRegion);
+  ImageRegionConstIteratorWithIndex<SliceType> jIt(jConn, jRegion);
+  ImageRegionIterator<SliceType> belongInit(belongs, iRegion);
 
   //convert jConn into n blobs, translating them into the index space of iConn
   while (!maskIt.IsAtEnd())
@@ -909,25 +918,25 @@ typename TImage::IndexType translation)
     ++jIt;
     ++belongInit;
     }
-  //WriteDebug(belongs, "C:\\belongs.nrrd");
+  WriteDebug(belongs, "C:\\belongs.nrrd");
 
   //prepare dilation filter
   iRegion = iConn->GetLargestPossibleRegion(); //expand to full i image
   for (unsigned x = 0; x < jRegionIds.size(); x++)
     {
     blobs[x]->SetRegions(iRegion);
-    //WriteDebug(blobs[x], (std::string("C:\\blob") + char('0' + x) + ".nrrd").c_str());
+    WriteDebug(blobs[x], (std::string("C:\\blob") + char('0' + x) + ".nrrd").c_str());
     }
-  ImageRegionConstIterator<BoolImageType> maskIt2(mask, iRegion);
-  ImageRegionConstIteratorWithIndex<BoolImageType> jIt2(blobs[0], iRegion);
+  ImageRegionConstIterator<BoolSliceType> maskIt2(mask, iRegion);
+  ImageRegionConstIteratorWithIndex<BoolSliceType> jIt2(blobs[0], iRegion);
 
   bool hollowedMaskEmpty;
   do //while hollowed mask is not empty
     {
     for (unsigned x = 0; x < jRegionIds.size(); x++)
       {
-      blobs[x] = Dilate1(blobs[x], mask, m_UseBallStructuringElement, axis);
-      //WriteDebug(blobs[x], (std::string("C:\\blob") + char('0' + x) + ".nrrd").c_str());
+      blobs[x] = Dilate1(blobs[x], mask);
+      WriteDebug(blobs[x], (std::string("C:\\blob") + char('0' + x) + ".nrrd").c_str());
       blobs[x]->DisconnectPipeline();
       }
 
@@ -980,24 +989,24 @@ typename TImage::IndexType translation)
       ++jIt2;
       ++belongIt;
       }
-    //WriteDebug(belongs, "C:\\belongs.nrrd");
+    WriteDebug(belongs, "C:\\belongs.nrrd");
     } while (!hollowedMaskEmpty);
   blobs.clear(); // deallocates the images
 
   //convert the belongs into n Conn-style images
-  std::vector<typename TImage::Pointer> conns;
+  std::vector<typename SliceType::Pointer> conns;
   for (unsigned x = 0; x < jRegionIds.size(); x++)
     {
-    typename TImage::Pointer temp2 = TImage::New();
+    typename SliceType::Pointer temp2 = SliceType::New();
     temp2->CopyInformation(iConn);
     temp2->SetRegions(iConn->GetLargestPossibleRegion());
     temp2->Allocate(true);
     conns.push_back(temp2);
     }
-  ImageRegionConstIteratorWithIndex<TImage> belongIt2(belongs, iRegion);
+  ImageRegionConstIteratorWithIndex<SliceType> belongIt2(belongs, iRegion);
   while (!belongIt2.IsAtEnd())
     {
-    const typename TImage::PixelType belong = belongIt2.Get();
+    const typename SliceType::PixelType belong = belongIt2.Get();
     if (belong > 0)
       {
       conns[belong - 1]->SetPixel(belongIt2.GetIndex(), iRegionId);
@@ -1014,30 +1023,30 @@ typename TImage::IndexType translation)
 
 
 template< typename TImage >
-typename TImage::Pointer
+typename MorphologicalContourInterpolator<TImage>::SliceType::Pointer
 MorphologicalContourInterpolator<TImage>
-::TranslateImage(typename TImage::Pointer image,
-  typename TImage::IndexType translation, typename TImage::RegionType newRegion)
+::TranslateImage(typename SliceType::Pointer image,
+  typename SliceType::IndexType translation, typename SliceType::RegionType newRegion)
 {
-  typename TImage::Pointer result = TImage::New();
+  typename SliceType::Pointer result = SliceType::New();
   result->CopyInformation(image);
   result->SetRegions(newRegion);
   result->Allocate(true); //initialize to zero (false)
-  typename TImage::RegionType inRegion = image->GetLargestPossibleRegion();
+  typename SliceType::RegionType inRegion = image->GetLargestPossibleRegion();
   IntersectionRegions(translation, inRegion, newRegion);
-  ImageAlgorithm::Copy<TImage, TImage>(image.GetPointer(), result.GetPointer(), inRegion, newRegion);
+  ImageAlgorithm::Copy<SliceType, SliceType>(image.GetPointer(), result.GetPointer(), inRegion, newRegion);
   return result;
 }
 
 
 template< typename TImage >
 void MorphologicalContourInterpolator<TImage>
-::IntersectionRegions(typename TImage::IndexType translation,
-  typename TImage::RegionType & iRegion, typename TImage::RegionType & jRegion)
+::IntersectionRegions(typename SliceType::IndexType translation,
+  typename SliceType::RegionType & iRegion, typename SliceType::RegionType & jRegion)
 {
-  typename TImage::IndexType iBegin = iRegion.GetIndex();
-  typename TImage::IndexType jBegin = jRegion.GetIndex();
-  for (IdentifierType d = 0; d < TImage::ImageDimension; d++)
+  typename SliceType::IndexType iBegin = iRegion.GetIndex();
+  typename SliceType::IndexType jBegin = jRegion.GetIndex();
+  for (IdentifierType d = 0; d < SliceType::ImageDimension; d++)
     {
     IndexValueType iSize = iRegion.GetSize(d);
     IndexValueType jSize = jRegion.GetSize(d);
@@ -1054,11 +1063,11 @@ void MorphologicalContourInterpolator<TImage>
 
 template< typename TImage >
 IdentifierType MorphologicalContourInterpolator<TImage>
-::Intersection(typename TImage::Pointer iConn, typename TImage::PixelType iRegionId,
-  typename TImage::Pointer jConn, PixelList jRegionIds,
-  typename TImage::IndexType translation)
+::Intersection(typename SliceType::Pointer iConn, typename TImage::PixelType iRegionId,
+  typename SliceType::Pointer jConn, PixelList jRegionIds,
+  typename SliceType::IndexType translation)
 {
-  typename TImage::RegionType iRegion, jRegion;
+  typename SliceType::RegionType iRegion, jRegion;
   iRegion = iConn->GetLargestPossibleRegion();
   jRegion = jConn->GetLargestPossibleRegion();
   IntersectionRegions(translation, iRegion, jRegion);
@@ -1068,8 +1077,8 @@ IdentifierType MorphologicalContourInterpolator<TImage>
     {
     counts[x] = 0;
     }
-  ImageRegionConstIterator<TImage> iIt(iConn, iRegion);
-  ImageRegionConstIterator<TImage> jIt(jConn, jRegion);
+  ImageRegionConstIterator<SliceType> iIt(iConn, iRegion);
+  ImageRegionConstIterator<SliceType> jIt(jConn, jRegion);
   while (!iIt.IsAtEnd())
     {
     if (iIt.Get() == iRegionId)
@@ -1118,12 +1127,12 @@ IdentifierType MorphologicalContourInterpolator<TImage>
 }
 
 template< typename TImage >
-typename TImage::IndexType
+typename MorphologicalContourInterpolator<TImage>::SliceType::IndexType
 MorphologicalContourInterpolator<TImage>
-::Centroid(typename TImage::Pointer conn, PixelList regionIds)
+::Centroid(typename SliceType::Pointer conn, PixelList regionIds)
 {
-  ImageRegionConstIteratorWithIndex<TImage> it(conn, conn->GetLargestPossibleRegion());
-  IndexValueType ind[TImage::ImageDimension] = { 0 }; //all components are initialized to zero
+  ImageRegionConstIteratorWithIndex<SliceType> it(conn, conn->GetLargestPossibleRegion());
+  IndexValueType ind[SliceType::ImageDimension] = { 0 }; //all components are initialized to zero
   IdentifierType pixelCount = 0;
   while (!it.IsAtEnd())
     {
@@ -1134,8 +1143,8 @@ MorphologicalContourInterpolator<TImage>
       if (res != regionIds.end())
         {
         ++pixelCount;
-        typename TImage::IndexType pInd = it.GetIndex();
-        for (unsigned d = 0; d < TImage::ImageDimension; d++)
+        typename SliceType::IndexType pInd = it.GetIndex();
+        for (unsigned d = 0; d < SliceType::ImageDimension; d++)
           {
           ind[d] += pInd[d];
           }
@@ -1143,8 +1152,8 @@ MorphologicalContourInterpolator<TImage>
       }
     ++it;
     }
-  typename TImage::IndexType retVal;
-  for (unsigned d = 0; d < TImage::ImageDimension; d++)
+  typename SliceType::IndexType retVal;
+  for (unsigned d = 0; d < SliceType::ImageDimension; d++)
     {
     retVal[d] = ind[d] / pixelCount;
     }
@@ -1153,28 +1162,28 @@ MorphologicalContourInterpolator<TImage>
 
 
 template< typename TImage >
-typename TImage::IndexType
+typename MorphologicalContourInterpolator<TImage>::SliceType::IndexType
 MorphologicalContourInterpolator<TImage>
-::Align(int axis, typename TImage::Pointer iConn, typename TImage::PixelType iRegionId,
-typename TImage::Pointer jConn, PixelList jRegionIds)
+::Align(typename SliceType::Pointer iConn, typename TImage::PixelType iRegionId,
+typename SliceType::Pointer jConn, PixelList jRegionIds)
 {
   //calculate centroids
   PixelList iRegionIds;
   iRegionIds.push_back(iRegionId);
-  typename TImage::IndexType iCentroid = Centroid(iConn, iRegionIds);
-  typename TImage::IndexType jCentroid = Centroid(jConn, jRegionIds);
+  typename SliceType::IndexType iCentroid = Centroid(iConn, iRegionIds);
+  typename SliceType::IndexType jCentroid = Centroid(jConn, jRegionIds);
 
-  typename TImage::IndexType ind;
-  for (unsigned d = 0; d < TImage::ImageDimension; d++)
+  typename SliceType::IndexType ind;
+  for (unsigned d = 0; d < SliceType::ImageDimension; d++)
   {
       ind[d] = jCentroid[d] - iCentroid[d];
   }
 
   //construct an image with all possible translations
-  typename TImage::RegionType searchRegion;
-  typename TImage::RegionType iLPR = iConn->GetLargestPossibleRegion();
-  typename TImage::RegionType jLPR = jConn->GetLargestPossibleRegion();
-  for (IdentifierType d = 0; d < TImage::ImageDimension; d++)
+  typename SliceType::RegionType searchRegion;
+  typename SliceType::RegionType iLPR = iConn->GetLargestPossibleRegion();
+  typename SliceType::RegionType jLPR = jConn->GetLargestPossibleRegion();
+  for (IdentifierType d = 0; d < SliceType::ImageDimension; d++)
     {
     searchRegion.SetIndex(d, jLPR.GetIndex()[d] - iLPR.GetIndex()[d] - iLPR.GetSize(d) + 1);
     searchRegion.SetSize(d, iLPR.GetSize(d) + jLPR.GetSize(d) - 1);
@@ -1182,28 +1191,27 @@ typename TImage::Pointer jConn, PixelList jRegionIds)
   //searchRegion.SetSize(axis, 1);
   //searchRegion.SetIndex(axis, 0);
 
-  typename BoolImageType::Pointer searched = BoolImageType::New();
+  typename BoolSliceType::Pointer searched = BoolSliceType::New();
   searched->SetRegions(searchRegion);
   searched->Allocate(true); //initialize to zero (false)
 
   //breadth first search starting from centroid, implicitly:
   //when intersection scores are equal, chooses the one closer to centroid
-  std::queue<typename TImage::IndexType> uncomputed;
-  typename TImage::IndexType t0 = { 0 };
-  t0[axis] = ind[axis];
+  std::queue<typename SliceType::IndexType> uncomputed;
+  typename SliceType::IndexType t0 = { 0 };
   uncomputed.push(t0); //no translation - guaranteed to find a non-zero intersection
   uncomputed.push(ind); //this introduces movement, and possibly has the same score
   searched->SetPixel(t0, true);
   searched->SetPixel(ind, true);
   IdentifierType score, maxScore = 0;
-  typename TImage::IndexType bestIndex;
+  typename SliceType::IndexType bestIndex;
   IdentifierType iter = 0;
   IdentifierType minIter = std::min(m_MinAlignIters, searchRegion.GetNumberOfPixels());
   IdentifierType maxIter = std::max(m_MaxAlignIters, (IdentifierType)sqrt(searchRegion.GetNumberOfPixels()));
 
   //debug: construct and later fill the image with intersection scores
 #ifndef NDEBUG
-  typename TImage::Pointer scoreImage = TImage::New();
+  typename SliceType::Pointer scoreImage = SliceType::New();
   scoreImage->SetRegions(searchRegion);
   scoreImage->Allocate(true);
 #endif // NDEBUG
@@ -1227,12 +1235,8 @@ typename TImage::Pointer jConn, PixelList jRegionIds)
     if (!m_HeuristicAlignment || maxScore == 0 || iter<=minIter
         || score > maxScore*0.9 && iter <= maxIter)
       {
-      for (unsigned d = 0; d < TImage::ImageDimension; d++)
+      for (unsigned d = 0; d < SliceType::ImageDimension; d++)
         {
-        if (d == axis)
-          {
-          continue; //do not waste time on additional checks
-          }
         ind[d] -= 1; //"left"
         if (searchRegion.IsInside(ind) && !searched->GetPixel(ind))
           {
@@ -1260,7 +1264,7 @@ typename TImage::Pointer jConn, PixelList jRegionIds)
 
 
 template< typename TImage >
-typename TImage::Pointer
+typename MorphologicalContourInterpolator<TImage>::SliceType::Pointer
 MorphologicalContourInterpolator<TImage>
 ::RegionedConnectedComponents(const typename TImage::RegionType region, typename TImage::PixelType label, IdentifierType &objectCount)
 {
@@ -1279,15 +1283,15 @@ void
 MorphologicalContourInterpolator<TImage>
 ::InterpolateBetweenTwo(int axis, TImage *out, typename TImage::PixelType label,
   typename TImage::IndexValueType i, typename TImage::IndexValueType j,
-  typename TImage::Pointer iconn, typename TImage::Pointer jconn)
+  typename SliceType::Pointer iconn, typename SliceType::Pointer jconn)
 {
   //go through comparison image and create correspondence pairs
   typedef std::set<std::pair<typename TImage::PixelType, typename TImage::PixelType> > PairSet;
   PairSet pairs, unwantedPairs, uncleanPairs;
-  typename TImage::RegionType ri = iconn->GetRequestedRegion();
-  typename TImage::RegionType rj = jconn->GetRequestedRegion();
-  ImageRegionConstIterator<TImage> iti(iconn, ri);
-  ImageRegionConstIterator<TImage> itj(jconn, rj);
+  typename SliceType::RegionType ri = iconn->GetRequestedRegion();
+  typename SliceType::RegionType rj = jconn->GetRequestedRegion();
+  ImageRegionConstIterator<SliceType> iti(iconn, ri);
+  ImageRegionConstIterator<SliceType> itj(jconn, rj);
   while (!iti.IsAtEnd())
     {
     if (iti.Get() != 0 || itj.Get() != 0)
@@ -1344,7 +1348,7 @@ MorphologicalContourInterpolator<TImage>
       {
       PixelList regionIDs;
       regionIDs.push_back(p->second);
-      typename TImage::IndexType translation = Align(axis, iconn, p->first, jconn, regionIDs);
+      typename SliceType::IndexType translation = Align(iconn, p->first, jconn, regionIDs);
       Interpolate1to1(axis, out, label, i, j, iconn, p->first, jconn, p->second, translation, false);
       iCounts.erase(p->first);
       jCounts.erase(p->second);
@@ -1373,7 +1377,7 @@ MorphologicalContourInterpolator<TImage>
           }
         }
 
-      typename TImage::IndexType translation = Align(axis, jconn, p->second, iconn, regionIDs);
+      typename SliceType::IndexType translation = Align(jconn, p->second, iconn, regionIDs);
       Interpolate1toN(axis, out, label, j, i, jconn, p->second, iconn, regionIDs, translation);
 
       typename PairSet::iterator rest = pairs.begin();
@@ -1404,7 +1408,7 @@ MorphologicalContourInterpolator<TImage>
           }
         }
 
-      typename TImage::IndexType translation = Align(axis, iconn, p->first, jconn, regionIDs);
+      typename SliceType::IndexType translation = Align(iconn, p->first, jconn, regionIDs);
       Interpolate1toN(axis, out, label, i, j, iconn, p->first, jconn, regionIDs, translation);
 
       typename PairSet::iterator rest = pairs.begin();
@@ -1446,7 +1450,7 @@ MorphologicalContourInterpolator<TImage>
         }
       }
 
-    typename TImage::IndexType translation = Align(axis, iconn, p->first, jconn, regionIDs);
+    typename SliceType::IndexType translation = Align(iconn, p->first, jconn, regionIDs);
     Interpolate1toN(axis, out, label, i, j, iconn, p->first, jconn, regionIDs, translation);
 
     typename PairSet::iterator rest = p;
@@ -1475,10 +1479,15 @@ MorphologicalContourInterpolator<TImage>
 {
   //do multithreading by paralellizing for different labels
   //and different inter-slice segments [thread pool of C++11 threads]
+#ifdef _DEBUG
+  m_ThreadPool = new ::ThreadPool(1); //single threading makes tracing easier
+#else
   m_ThreadPool = new ::ThreadPool(std::thread::hardware_concurrency());
+#endif
+  typename SliceType::Pointer sliceVar;
   std::vector<decltype(m_ThreadPool->enqueue(
-      &MorphologicalContourInterpolator<TImage>::InterpolateBetweenTwo,
-      this, axis, out, 0, 0, 0, out, out))> results; //so we can wait for all the results
+    &MorphologicalContourInterpolator<TImage>::InterpolateBetweenTwo,
+    this, axis, out, 0, 0, 0, sliceVar, sliceVar))> results; //so we can wait for all the results
   m_StopSpawning = false;
 
   for (typename LabeledSlicesType::iterator it = m_LabeledSlices[axis].begin();
@@ -1494,10 +1503,10 @@ MorphologicalContourInterpolator<TImage>
 
       typename TImage::RegionType ri;
       ri = m_BoundingBoxes[it->first];
-      ri.SetSize(axis, 1);
+      ri.SetSize(axis, 0);
       ri.SetIndex(axis, *prev);
       IdentifierType xCount;
-      typename TImage::Pointer iconn = this->RegionedConnectedComponents(ri, it->first, xCount);
+      typename SliceType::Pointer iconn = this->RegionedConnectedComponents(ri, it->first, xCount);
       iconn->DisconnectPipeline();
 
       typename SliceSetType::iterator next = it->second.begin();
@@ -1505,7 +1514,7 @@ MorphologicalContourInterpolator<TImage>
         {
         typename TImage::RegionType rj = ri;
         rj.SetIndex(axis, *next);
-        typename TImage::Pointer jconn = this->RegionedConnectedComponents(rj, it->first, xCount);
+        typename SliceType::Pointer jconn = this->RegionedConnectedComponents(rj, it->first, xCount);
         jconn->DisconnectPipeline();
 
         //WriteDebug(iconn, "C:\\iconn.nrrd");
