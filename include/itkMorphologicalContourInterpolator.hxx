@@ -78,10 +78,12 @@ void WriteDebug(itk::SmartPointer<Image<bool, dim>> out, const char *filename)
 }
 
 template< typename TImage >
-bool ImagesEqual(typename TImage::Pointer a, typename TImage::Pointer b)
+bool
+MorphologicalContourInterpolator<TImage>
+::ImagesEqual(typename BoolSliceType::Pointer a, typename BoolSliceType::Pointer b)
 {
-  ImageRegionConstIterator<TImage> ita(a, a->GetLargestPossibleRegion());
-  ImageRegionConstIterator<TImage> itb(b, b->GetLargestPossibleRegion());
+  ImageRegionConstIterator<BoolSliceType> ita(a, a->GetLargestPossibleRegion());
+  ImageRegionConstIterator<BoolSliceType> itb(b, b->GetLargestPossibleRegion());
 
   while (!ita.IsAtEnd())
     {
@@ -393,7 +395,7 @@ MorphologicalContourInterpolator<TImage>
     {
     seq.back()->DisconnectPipeline();
     seq.push_back(Dilate1(seq.back(), end));
-    } while (!ImagesEqual<BoolSliceType>(seq.back(), seq[seq.size() - 2]));
+    } while (!ImagesEqual(seq.back(), seq[seq.size() - 2]));
   seq.pop_back(); //remove duplicate image
   return seq;
 }
@@ -402,7 +404,7 @@ MorphologicalContourInterpolator<TImage>
 template< typename TImage >
 typename MorphologicalContourInterpolator<TImage>::BoolSliceType::Pointer
 MorphologicalContourInterpolator<TImage>
-::FindMedianImageDilations(int axis, typename BoolSliceType::Pointer intersection,
+::FindMedianImageDilations(typename BoolSliceType::Pointer intersection,
   typename BoolSliceType::Pointer iMask, typename BoolSliceType::Pointer jMask)
 {
   std::vector<typename BoolSliceType::Pointer> iSeq
@@ -475,7 +477,7 @@ MorphologicalContourInterpolator<TImage>
 template< typename TImage >
 typename MorphologicalContourInterpolator<TImage>::BoolSliceType::Pointer
 MorphologicalContourInterpolator<TImage>
-::FindMedianImageDistances(int axis, typename BoolSliceType::Pointer intersection,
+::FindMedianImageDistances(typename BoolSliceType::Pointer intersection,
   typename BoolSliceType::Pointer iMask, typename BoolSliceType::Pointer jMask)
 {
   //calculate distance field
@@ -742,11 +744,11 @@ MorphologicalContourInterpolator<TImage>
   typename BoolSliceType::Pointer median;
   if (m_UseDistanceTransform)
     {
-    median = FindMedianImageDistances(axis, intersection, iSlice, jSlice);
+    median = FindMedianImageDistances(intersection, iSlice, jSlice);
     }
   else
     {
-    median = FindMedianImageDilations(axis, intersection, iSlice, jSlice);
+    median = FindMedianImageDilations(intersection, iSlice, jSlice);
     }
 
   //finally write it out into the output image pointer
@@ -1571,7 +1573,7 @@ void
 MorphologicalContourInterpolator<TImage>
 ::AllocateOutputs()
 {
-  typedef ImageBase< OutputImageDimension > ImageBaseType;
+  typedef ImageBase< TImage::ImageDimension > ImageBaseType;
   typename ImageBaseType::Pointer outputPtr;
 
   for ( OutputDataObjectIterator it(this); !it.IsAtEnd(); it++ )
