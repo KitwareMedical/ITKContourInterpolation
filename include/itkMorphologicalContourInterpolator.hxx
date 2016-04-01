@@ -1544,24 +1544,18 @@ MorphologicalContourInterpolator<TImage>
 template< typename TImage >
 void
 MorphologicalContourInterpolator<TImage>
-::CombineInputAndInterpolate(typename TImage::Pointer interpolate)
+::OverlayInput()
 {
   ImageRegionIterator<TImage> itO(m_Output, m_Output->GetBufferedRegion());
   ImageRegionConstIterator<TImage> itI(m_Input, m_Output->GetBufferedRegion());
-  ImageRegionConstIterator<TImage> it(interpolate, m_Output->GetBufferedRegion());
-  while (!it.IsAtEnd())
+  while (!itI.IsAtEnd())
     {
     typename TImage::PixelType val = itI.Get();
     if (val != 0)
       {
       itO.Set(val);
       }
-    else
-      {
-      itO.Set(it.Get());
-      }
 
-    ++it;
     ++itI;
     ++itO;
     }
@@ -1575,6 +1569,25 @@ MorphologicalContourInterpolator<TImage>
 template< typename TImage >
 void
 MorphologicalContourInterpolator<TImage>
+::AllocateOutputs()
+{
+  typedef ImageBase< OutputImageDimension > ImageBaseType;
+  typename ImageBaseType::Pointer outputPtr;
+
+  for ( OutputDataObjectIterator it(this); !it.IsAtEnd(); it++ )
+    {
+    outputPtr = dynamic_cast< ImageBaseType * >( it.GetOutput() );
+    if ( outputPtr )
+      {
+      outputPtr->SetBufferedRegion( outputPtr->GetRequestedRegion() );
+      outputPtr->Allocate(true);
+      }
+    }
+}
+
+template< typename TImage >
+void
+MorphologicalContourInterpolator<TImage>
 ::GenerateData()
 {
   m_Input = TImage::New();
@@ -1582,16 +1595,14 @@ MorphologicalContourInterpolator<TImage>
   this->AllocateOutputs();
   m_Output = TImage::New();
   m_Output->Graft(this->GetOutput());
-  typename TImage::Pointer tempOut = TImage::New();
-  tempOut->CopyInformation(m_Output);
-  tempOut->SetRegions(m_Output->GetLargestPossibleRegion());
 
   this->DetermineSliceOrientations();
 
-  if (m_BoundingBoxes.size() == 0) //empty input image
+  if (m_BoundingBoxes.size() == 0) //no contours detected
     {
-    tempOut->Allocate(true);
-    CombineInputAndInterpolate(tempOut);
+    ImageAlgorithm::Copy<TImage, TImage>(
+      m_Input.GetPointer(), m_Output.GetPointer(),
+      m_Output->GetRequestedRegion(), m_Output->GetRequestedRegion());
     return;
     }
 
@@ -1631,13 +1642,17 @@ MorphologicalContourInterpolator<TImage>
 
     if (perAxisInterpolates.size() == 0) //nothing to process
       {
-      tempOut->Allocate(true);
-      CombineInputAndInterpolate(tempOut);
+      ImageAlgorithm::Copy<TImage, TImage>(
+        m_Input.GetPointer(), m_Output.GetPointer(),
+        m_Output->GetRequestedRegion(), m_Output->GetRequestedRegion());
       return;
       }
     if (perAxisInterpolates.size() == 1)
       {
-      CombineInputAndInterpolate(perAxisInterpolates[0]);
+      ImageAlgorithm::Copy<TImage, TImage>(
+        perAxisInterpolates[0].GetPointer(), m_Output.GetPointer(),
+        m_Output->GetRequestedRegion(), m_Output->GetRequestedRegion());
+      OverlayInput();
       return;
       }
     //else
@@ -1652,8 +1667,7 @@ MorphologicalContourInterpolator<TImage>
     std::vector<typename TImage::PixelType> values;
     values.reserve(perAxisInterpolates.size());
 
-    tempOut->Allocate(true);
-    ImageRegionIterator<TImage> it(tempOut, m_Output->GetRequestedRegion());
+    ImageRegionIterator<TImage> it(m_Output, m_Output->GetRequestedRegion());
     while (!it.IsAtEnd())
       {
       values.clear();
@@ -1676,10 +1690,9 @@ MorphologicalContourInterpolator<TImage>
     } //interpolate along all axes
   else //interpolate along the specified axis
     {
-    tempOut->Allocate(true);
-    this->InterpolateAlong(m_Axis, tempOut);
+    this->InterpolateAlong(m_Axis, m_Output);
     }
-  CombineInputAndInterpolate(tempOut);
+  OverlayInput();
 }
 
 }// end namespace itk

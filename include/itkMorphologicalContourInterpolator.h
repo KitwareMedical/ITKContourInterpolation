@@ -190,10 +190,12 @@ protected:
   The images must cover the same region */
   IdentifierType CardSymDifference(typename BoolSliceType::Pointer shape1,
     typename BoolSliceType::Pointer shape2);
+  
+  /** Copied from ImageSource and changed to allocate a cleared buffer. */
+  virtual void AllocateOutputs() ITK_OVERRIDE;
 
-  /** Writes into m_Output.
-  Copies non-zeroes from m_Input, and fills zeroes from interpolate. */
-  void CombineInputAndInterpolate(typename TImage::Pointer interpolate);
+  /** Overwrites m_Output with non non-zeroes from m_Input. */
+  void OverlayInput();
 
   /** Returns the centroid of given regions */
   typename SliceType::IndexType Centroid(typename SliceType::Pointer conn, PixelList regionIds);
