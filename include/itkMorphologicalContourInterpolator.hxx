@@ -318,29 +318,33 @@ MorphologicalContourInterpolator<TImage>
 ::Dilate1(typename BoolSliceType::Pointer seed, typename BoolSliceType::Pointer mask)
 {
   //set up structuring element for dilation
-  typedef Size<BoolSliceType::ImageDimension> SizeType;
-  SizeType size;
-  size.Fill(1);
-
   typedef BinaryCrossStructuringElement<typename BoolSliceType::PixelType, BoolSliceType::ImageDimension> CrossStructuringElementType;
   typedef BinaryBallStructuringElement<typename BoolSliceType::PixelType, BoolSliceType::ImageDimension> BallStructuringElementType;
   typedef BinaryDilateImageFilter<BoolSliceType, BoolSliceType, CrossStructuringElementType> CrossDilateType;
   typedef BinaryDilateImageFilter<BoolSliceType, BoolSliceType, BallStructuringElementType> BallDilateType;
-
+  
+  thread_local bool initialized = false;
   thread_local typename CrossDilateType::Pointer m_CrossDilator = CrossDilateType::New();
-  m_CrossDilator->SetNumberOfThreads(1); //otherwise conflicts with C++11 threads
-  thread_local CrossStructuringElementType m_CrossStructuringElement;
-  m_CrossStructuringElement.SetRadius(size);
-  m_CrossStructuringElement.CreateStructuringElement();
-  m_CrossDilator->SetKernel(m_CrossStructuringElement);
-
   thread_local typename BallDilateType::Pointer m_BallDilator = BallDilateType::New();
-  m_BallDilator->SetNumberOfThreads(1); //otherwise conflicts with C++11 threads
-  thread_local BallStructuringElementType m_BallStructuringElement;
-  m_BallStructuringElement.SetRadius(size);
-  m_BallStructuringElement.CreateStructuringElement();
-  m_BallDilator->SetKernel(m_BallStructuringElement);
-  //TODO: keep structuring element and dilator per axis instead of per thread?
+  if (!initialized) //make sure these non-trivial operations are executed only once per thread
+    {
+    typedef Size<BoolSliceType::ImageDimension> SizeType;
+    SizeType size;
+    size.Fill(1);
+    
+    m_CrossDilator->SetNumberOfThreads(1); //otherwise conflicts with C++11 threads
+    thread_local CrossStructuringElementType m_CrossStructuringElement;
+    m_CrossStructuringElement.SetRadius(size);
+    m_CrossStructuringElement.CreateStructuringElement();
+    m_CrossDilator->SetKernel(m_CrossStructuringElement);
+
+    m_BallDilator->SetNumberOfThreads(1); //otherwise conflicts with C++11 threads
+    thread_local BallStructuringElementType m_BallStructuringElement;
+    m_BallStructuringElement.SetRadius(size);
+    m_BallStructuringElement.CreateStructuringElement();
+    m_BallDilator->SetKernel(m_BallStructuringElement);
+    }
+  initialized = true;
 
   typename BoolSliceType::Pointer temp;
   if (m_UseBallStructuringElement)
@@ -383,11 +387,6 @@ MorphologicalContourInterpolator<TImage>
 ::GenerateDilationSequence(
   typename BoolSliceType::Pointer begin, typename BoolSliceType::Pointer end)
 {
-  //typedef Testing::HashImageFilter<BoolSliceType> HashType;
-  //HashType::Pointer hasher = HashType::New();
-  //hasher->SetInPlace(true);
-  //std::vector<std::string> hashes;
-  //TODO: optimization: replace ImagesEqual call with hash comparison?
   std::vector<typename BoolSliceType::Pointer> seq;
   seq.push_back(Dilate1(begin, end));
   do
@@ -589,8 +588,8 @@ MorphologicalContourInterpolator<TImage>
 
 template<typename TImage>
 typename MorphologicalContourInterpolator<TImage>::SliceType::RegionType
-MorphologicalContourInterpolator<TImage>::
-BoundingBox(itk::SmartPointer<SliceType> image)
+MorphologicalContourInterpolator<TImage>
+::BoundingBox(itk::SmartPointer<SliceType> image)
 {
   typename SliceType::RegionType newRegion = image->GetLargestPossibleRegion();
   typename SliceType::IndexType minInd = newRegion.GetIndex() + newRegion.GetSize();
@@ -918,14 +917,14 @@ typename SliceType::IndexType translation)
     ++jIt;
     ++belongInit;
     }
-  WriteDebug(belongs, "C:\\belongs.nrrd");
+  //WriteDebug(belongs, "C:\\belongs.nrrd");
 
   //prepare dilation filter
   iRegion = iConn->GetLargestPossibleRegion(); //expand to full i image
   for (unsigned x = 0; x < jRegionIds.size(); x++)
     {
     blobs[x]->SetRegions(iRegion);
-    WriteDebug(blobs[x], (std::string("C:\\blob") + char('0' + x) + ".nrrd").c_str());
+    //WriteDebug(blobs[x], (std::string("C:\\blob") + char('0' + x) + ".nrrd").c_str());
     }
   ImageRegionConstIterator<BoolSliceType> maskIt2(mask, iRegion);
   ImageRegionConstIteratorWithIndex<BoolSliceType> jIt2(blobs[0], iRegion);
@@ -936,11 +935,10 @@ typename SliceType::IndexType translation)
     for (unsigned x = 0; x < jRegionIds.size(); x++)
       {
       blobs[x] = Dilate1(blobs[x], mask);
-      WriteDebug(blobs[x], (std::string("C:\\blob") + char('0' + x) + ".nrrd").c_str());
+      //WriteDebug(blobs[x], (std::string("C:\\blob") + char('0' + x) + ".nrrd").c_str());
       blobs[x]->DisconnectPipeline();
       }
 
-    //TODO: replace this loop by LabelErodeDilate filters?
     hollowedMaskEmpty = true;
     maskIt2.GoToBegin();
     jIt2.GoToBegin();
@@ -989,7 +987,7 @@ typename SliceType::IndexType translation)
       ++jIt2;
       ++belongIt;
       }
-    WriteDebug(belongs, "C:\\belongs.nrrd");
+    //WriteDebug(belongs, "C:\\belongs.nrrd");
     } while (!hollowedMaskEmpty);
   blobs.clear(); // deallocates the images
 
@@ -1165,7 +1163,7 @@ template< typename TImage >
 typename MorphologicalContourInterpolator<TImage>::SliceType::IndexType
 MorphologicalContourInterpolator<TImage>
 ::Align(typename SliceType::Pointer iConn, typename TImage::PixelType iRegionId,
-typename SliceType::Pointer jConn, PixelList jRegionIds)
+  typename SliceType::Pointer jConn, PixelList jRegionIds)
 {
   //calculate centroids
   PixelList iRegionIds;

@@ -233,6 +233,7 @@ protected:
   typename SliceType::RegionType BoundingBox(itk::SmartPointer<SliceType> image);
 
   //assumes both valid region and valid index
+  //it can be invoked with 2D or 3D region, hence additional template parameter
   template< typename T2 >
   void ExpandRegion(typename T2::RegionType &region, typename T2::IndexType index);
 
