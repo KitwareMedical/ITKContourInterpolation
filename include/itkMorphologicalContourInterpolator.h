@@ -77,13 +77,6 @@ public:
   typedef ImageToImageFilter< TImage, TImage >     Superclass;
   typedef SmartPointer< Self >                     Pointer;
 
-  /** Derived image typedefs. */
-  typedef Image<bool, TImage::ImageDimension>      BoolImageType;
-  typedef Image<float, TImage::ImageDimension - 1> FloatSliceType;
-  typedef Image<typename TImage::PixelType,
-    TImage::ImageDimension - 1>                    SliceType;
-  typedef Image<bool, TImage::ImageDimension - 1>  BoolSliceType;
-
   /** Method for creation through the object factory. */
   itkNewMacro(Self);
 
@@ -147,8 +140,12 @@ public:
   /** Use ball instead of default cross structuring element for repeated dilations. */
   void SetUseBallStructuringElement(bool useBall)
     {
-    m_UseBallStructuringElement = useBall;
-    m_ConnectedComponents->SetFullyConnected(useBall);
+    if (useBall!= m_UseBallStructuringElement)
+      {
+      m_UseBallStructuringElement = useBall;
+      m_ConnectedComponents->SetFullyConnected(useBall);
+      this->Modified();
+      }
     }
 
   /** Use ball instead of default cross structuring element for repeated dilations. */
@@ -157,6 +154,21 @@ public:
   /** Use ball instead of default cross structuring element for repeated dilations. */
   itkGetConstMacro(UseBallStructuringElement, bool);
 
+  /** An std::set of slice indices which need to be interpolated. */
+  typedef std::set<typename TImage::IndexValueType> SliceSetType;
+
+  /** If default slice detection is not wanted, slice indices
+  *   between which interpolation is done can be set using this method. */
+  void SetLabeledSliceIndices(unsigned int axis, std::vector<typename TImage::IndexValueType> indices);
+
+  /** If default slice detection is not wanted, slice indices
+  *   between which interpolation is done can be set using this method. */
+  void SetLabeledSliceIndices(unsigned int axis, SliceSetType indices);
+
+  /** If default slice detection is not wanted, slice indices
+  *   between which interpolation is done can be set using this method. */
+  SliceSetType GetLabeledSliceIndices(unsigned int axis);
+
   /** Run-time type information (and related methods). */
   itkTypeMacro(MorphologicalContourInterpolator, ImageToImageFilter);
 
@@ -164,6 +176,7 @@ protected:
   MorphologicalContourInterpolator();
   ~MorphologicalContourInterpolator(){}
 
+  SliceSetType               m_SliceSets[TImage::ImageDimension];
   typename TImage::PixelType m_Label;
   int                        m_Axis;
   bool                       m_HeuristicAlignment;
@@ -175,9 +188,15 @@ protected:
   IdentifierType             m_MaxAlignIters; //maximum number of iterations in align method
   ::ThreadPool*              m_ThreadPool; //avoid name conflict
 
+  /** Derived image typedefs. */
+  typedef Image<bool, TImage::ImageDimension>      BoolImageType;
+  typedef Image<float, TImage::ImageDimension - 1> FloatSliceType;
+  typedef Image<typename TImage::PixelType,
+    TImage::ImageDimension - 1>                    SliceType;
+  typedef Image<bool, TImage::ImageDimension - 1>  BoolSliceType;
+
   /** Are these two slices equal? */
   bool ImagesEqual(typename BoolSliceType::Pointer a, typename BoolSliceType::Pointer b);
-
 
   /** Does the real work. */
   virtual void GenerateData() ITK_OVERRIDE;
@@ -282,21 +301,8 @@ protected:
   BoundingBoxesType m_BoundingBoxes; //bounding box for each label
 
   //each label gets a set of slices in which it is present
-  typedef std::set<typename TImage::IndexValueType> SliceSetType;
   typedef itksys::hash_map<typename TImage::PixelType, SliceSetType > LabeledSlicesType;
   std::vector<LabeledSlicesType> m_LabeledSlices; //one for each axis
-
-  /** If default slice detection is not wanted, slice indices 
-  *   between which interpolation is done can be set using this method. */
-  void SetLabeledSliceIndices(unsigned int axis, std::vector<typename TImage::IndexValueType> indices);
-
-  /** If default slice detection is not wanted, slice indices
-  *   between which interpolation is done can be set using this method. */
-  void SetLabeledSliceIndices(unsigned int axis, SliceSetType indices);
-
-  /** If default slice detection is not wanted, slice indices
-  *   between which interpolation is done can be set using this method. */
-  SliceSetType GetLabeledSliceIndices(unsigned int axis);
 
   /** Calculates a bounding box of non-zero pixels. */
   typename SliceType::RegionType BoundingBox(itk::SmartPointer<SliceType> image);
