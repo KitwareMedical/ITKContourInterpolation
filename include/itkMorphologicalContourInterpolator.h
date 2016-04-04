@@ -24,8 +24,6 @@
 #include "itkConnectedComponentImageFilter.h"
 #include "itkBinaryThresholdImageFilter.h"
 
-#include "ThreadPool.h"
-
 
 namespace itk
 {
@@ -70,11 +68,15 @@ namespace itk
 template< typename TImage >
 class MorphologicalContourInterpolator :public ImageToImageFilter < TImage, TImage >
 {
+    template< typename Any >
+    friend class MorphologicalContourInterpolatorParallelInvoker;
 public:
   /** Standard class typedefs. */
   typedef MorphologicalContourInterpolator         Self;
   typedef ImageToImageFilter< TImage, TImage >     Superclass;
   typedef SmartPointer< Self >                     Pointer;
+  typedef Image<typename TImage::PixelType,
+      TImage::ImageDimension - 1>                  SliceType;
 
   /** Method for creation through the object factory. */
   itkNewMacro(Self);
@@ -185,13 +187,10 @@ protected:
   bool                       m_StopSpawning; //stop spawning new threads
   IdentifierType             m_MinAlignIters; //minimum number of iterations in align method
   IdentifierType             m_MaxAlignIters; //maximum number of iterations in align method
-  ::ThreadPool*              m_ThreadPool; //avoid name conflict
 
   /** Derived image typedefs. */
   typedef Image<bool, TImage::ImageDimension>      BoolImageType;
   typedef Image<float, TImage::ImageDimension - 1> FloatSliceType;
-  typedef Image<typename TImage::PixelType,
-    TImage::ImageDimension - 1>                    SliceType;
   typedef Image<bool, TImage::ImageDimension - 1>  BoolSliceType;
 
   /** Are these two slices equal? */
@@ -266,7 +265,7 @@ protected:
   The images must cover the same region */
   IdentifierType CardSymDifference(typename BoolSliceType::Pointer shape1,
     typename BoolSliceType::Pointer shape2);
-  
+
   /** Copied from ImageSource and changed to allocate a cleared buffer. */
   virtual void AllocateOutputs() ITK_OVERRIDE;
 
@@ -307,7 +306,7 @@ protected:
   typename SliceType::RegionType BoundingBox(itk::SmartPointer<SliceType> image);
 
   /** Expands a region to incorporate the provided index.
-  *   Assumes both a valid region and a valid index. 
+  *   Assumes both a valid region and a valid index.
   *   It can be invoked with 2D or 3D region, hence the additional template parameter. */
   template< typename T2 >
   void ExpandRegion(typename T2::RegionType &region, typename T2::IndexType index);

@@ -31,10 +31,14 @@
 #include "itkBinaryBallStructuringElement.h"
 #include "itkAndImageFilter.h"
 #include "itkOrImageFilter.h"
+#include "itkMultiThreader.h"
+#include "itkThreadedIndexedContainerPartitioner.h"
+#include "itkSimpleFastMutexLock.h"
 #include <climits>
 #include <utility>
 #include <algorithm>
 #include <queue>
+#include <vector>
 #include <thread>
 #include <future>
 #include <chrono>
@@ -77,6 +81,79 @@ void WriteDebug(itk::SmartPointer<Image<bool, dim>> out, const char *filename)
   WriteDebug<ucharImageType>(caster->GetOutput(), filename);
 }
 
+
+template < typename TImage>
+struct SegmentBetweenTwo
+{
+    int axis;
+    typename TImage * out;
+    int label, i, j;
+    typename MorphologicalContourInterpolator<TImage>
+      ::SliceType::Pointer iconn, jconn;
+};
+
+
+template< typename TImage >
+class MorphologicalContourInterpolatorParallelInvoker :
+    public itk::DomainThreader<
+    itk::ThreadedIndexedContainerPartitioner,
+    MorphologicalContourInterpolator< TImage> >
+{
+public:
+  // Standard ITK typedefs.
+  typedef MorphologicalContourInterpolatorParallelInvoker Self;
+  typedef itk::DomainThreader< itk::ThreadedIndexedContainerPartitioner,
+    MorphologicalContourInterpolator< TImage> >           Superclass;
+  typedef itk::SmartPointer< Self >                       Pointer;
+  typedef itk::SmartPointer< const Self >                 ConstPointer;
+
+  // The domain is an index range.
+  typedef typename Superclass::DomainType                 DomainType;
+
+  // This creates the ::New() method for instantiating the class.
+  itkNewMacro(Self);
+
+  /** Array of segments which need to be interpolated. */
+  void SetWorkArray(std::vector< SegmentBetweenTwo<TImage> > & workArray)
+  {
+    m_WorkArray = workArray;
+  }
+
+  /** Array of segments which need to be interpolated. */
+  void ClearWorkArray()
+  {
+    m_WorkArray.clear();
+  }
+
+protected:
+  // We need a constructor for the itkNewMacro.
+  MorphologicalContourInterpolatorParallelInvoker() {}
+
+private:
+  virtual void ThreadedExecution(const DomainType & subDomain,
+      const itk::ThreadIdType threadId)
+  {
+    // Look only at the range of cells by the set of indices in the subDomain.
+    for (itk::IndexValueType ii = subDomain[0];
+        ii <= subDomain[1] && ii < m_WorkArray.size(); ++ii)
+    {
+      this->m_Associate->InterpolateBetweenTwo
+      (
+          m_WorkArray[ii].axis,
+          m_WorkArray[ii].out,
+          m_WorkArray[ii].label,
+          m_WorkArray[ii].i,
+          m_WorkArray[ii].j,
+          m_WorkArray[ii].iconn,
+          m_WorkArray[ii].jconn
+      );
+    }
+  }
+
+  std::vector<SegmentBetweenTwo<TImage> > m_WorkArray;
+};
+
+
 template< typename TImage >
 bool
 MorphologicalContourInterpolator<TImage>
@@ -115,7 +192,6 @@ MorphologicalContourInterpolator<TImage>
   m_UseDistanceTransform(true),
   m_UseBallStructuringElement(false),
   m_UseCustomSlicePositions(false),
-  m_ThreadPool(nullptr),
   m_StopSpawning(false),
   m_MinAlignIters(pow(2, TImage::ImageDimension)), //smaller of this and pixel count of the search image
   m_MaxAlignIters(pow(6, TImage::ImageDimension)), //bigger of this and root of pixel count of the search image
@@ -314,7 +390,7 @@ MorphologicalContourInterpolator<TImage>
   phSlice->SetPixel(centroid, iRegionId);
   //WriteDebug(iConn, "C:\\iConn.nrrd");
   //WriteDebug(phSlice, "C:\\phSlice.nrrd");
-  
+
   //do alignment in case the iShape is concave and centroid is not within the iShape
   typename SliceType::IndexType translation = Align(iConn, iRegionId, phSlice, jRegionIds);
 
@@ -340,7 +416,7 @@ MorphologicalContourInterpolator<TImage>
   typedef BinaryBallStructuringElement<typename BoolSliceType::PixelType, BoolSliceType::ImageDimension> BallStructuringElementType;
   typedef BinaryDilateImageFilter<BoolSliceType, BoolSliceType, CrossStructuringElementType> CrossDilateType;
   typedef BinaryDilateImageFilter<BoolSliceType, BoolSliceType, BallStructuringElementType> BallDilateType;
-  
+
   thread_local bool initialized = false;
   thread_local typename CrossDilateType::Pointer m_CrossDilator = CrossDilateType::New();
   thread_local typename BallDilateType::Pointer m_BallDilator = BallDilateType::New();
@@ -349,7 +425,7 @@ MorphologicalContourInterpolator<TImage>
     typedef Size<BoolSliceType::ImageDimension> SizeType;
     SizeType size;
     size.Fill(1);
-    
+
     m_CrossDilator->SetNumberOfThreads(1); //otherwise conflicts with C++11 threads
     thread_local CrossStructuringElementType m_CrossStructuringElement;
     m_CrossStructuringElement.SetRadius(size);
@@ -810,11 +886,17 @@ MorphologicalContourInterpolator<TImage>
   ImageRegionConstIterator<BoolSliceType> seqIt(median, newRegion);
   ImageRegionIterator<TImage> outIt(out, outRegion);
   ImageRegionIterator<SliceType> midIt(midConn, newRegion);
+  static SimpleFastMutexLock mutex;
   while (!outIt.IsAtEnd())
     {
     if (seqIt.Get())
       {
-      outIt.Set(label);
+      mutex.Lock();
+      if (outIt.Get() < label)
+        {
+        outIt.Set(label);
+        }
+      mutex.Unlock();
       midIt.Set(1);
       }
     ++seqIt;
@@ -832,14 +914,6 @@ MorphologicalContourInterpolator<TImage>
       bool first = abs(i - mid) > 1; //interpolate i-mid?
       bool second = abs(j - mid) > 1; //interpolate j-mid?
 
-      if (first && second && !m_StopSpawning) //then first in new thread
-        {
-        m_ThreadPool->enqueue(
-          &MorphologicalContourInterpolator<TImage>::Interpolate1to1,
-          this, axis, out, label, i, mid, iConn, iRegionId, midConn, 1, iTrans, true);
-        Interpolate1to1(axis, out, label, j, mid, jConn, jRegionId, midConn, 1, jTrans, true);
-        }
-      else //sequential
       {
         if (first)
           {
@@ -1493,14 +1567,8 @@ void
 MorphologicalContourInterpolator<TImage>
 ::InterpolateAlong(int axis, TImage *out)
 {
-  //do multithreading by paralellizing for different labels
-  //and different inter-slice segments [thread pool of C++11 threads]
-  m_ThreadPool = new ::ThreadPool(std::thread::hardware_concurrency());
-  typename SliceType::Pointer sliceVar;
-  std::vector<decltype(m_ThreadPool->enqueue(
-    &MorphologicalContourInterpolator<TImage>::InterpolateBetweenTwo,
-    this, axis, out, 0, 0, 0, sliceVar, sliceVar))> results; //so we can wait for all the results
-  m_StopSpawning = false;
+  //a list of segments which need to be interpolated
+  std::vector<SegmentBetweenTwo<TImage> > segments;
 
   for (typename LabeledSlicesType::iterator it = m_LabeledSlices[axis].begin();
     it != m_LabeledSlices[axis].end(); ++it)
@@ -1510,13 +1578,10 @@ MorphologicalContourInterpolator<TImage>
       typename SliceSetType::iterator prev;
       if (m_UseCustomSlicePositions && m_Label != 0)
         {
-        prev = m_SliceSets[axis].begin();
-        }
-      else
-        {
-        prev = it->second.begin();
+        it->second = m_SliceSets[axis];
         }
 
+      prev = it->second.begin();
       if (prev == it->second.end())
         {
         continue; //nothing to do for this label
@@ -1530,16 +1595,7 @@ MorphologicalContourInterpolator<TImage>
       typename SliceType::Pointer iconn = this->RegionedConnectedComponents(ri, it->first, xCount);
       iconn->DisconnectPipeline();
 
-      typename SliceSetType::iterator next;
-      if (m_UseCustomSlicePositions && m_Label != 0)
-        {
-        next = m_SliceSets[axis].begin();
-        }
-      else
-        {
-        next = it->second.begin();
-        }
-
+      typename SliceSetType::iterator next = it->second.begin();
       for (++next; next != it->second.end(); ++next)
         {
         typename TImage::RegionType rj = ri;
@@ -1552,9 +1608,15 @@ MorphologicalContourInterpolator<TImage>
 
         if (*prev + 1 < *next) //only if they are not adjacent slices
           {
-          results.push_back(m_ThreadPool->enqueue(
-            &MorphologicalContourInterpolator<TImage>::InterpolateBetweenTwo,
-            this, axis, out, it->first, *prev, *next, iconn, jconn));
+          SegmentBetweenTwo<TImage> s;
+          s.axis = axis;
+          s.out = out;
+          s.label = it->first;
+          s.i = *prev;
+          s.j = *next;
+          s.iconn = iconn;
+          s.jconn = jconn;
+          segments.push_back(s);
           }
         iconn = jconn;
         prev = next;
@@ -1562,14 +1624,13 @@ MorphologicalContourInterpolator<TImage>
       }
     }
 
-  for (int i = 0; i < results.size(); i++)
-    {
-    results[i].get(); //wait for thread
-    }
-  m_StopSpawning = true;
-  //invoking destructor waits for any leftover threads created by Interpolate1to1
-  delete m_ThreadPool;
-  m_ThreadPool = nullptr;
+  typedef MorphologicalContourInterpolatorParallelInvoker<TImage> Parallelizer;
+  typename Parallelizer::Pointer parallizer = Parallelizer::New();
+  parallizer->SetWorkArray(segments);
+  Parallelizer::DomainType completeDomain;
+  completeDomain[0] = 0;
+  completeDomain[1] = std::max(0, int(segments.size()) - 1);
+  parallizer->Execute(this, completeDomain);
 }
 
 
@@ -1701,16 +1762,16 @@ MorphologicalContourInterpolator<TImage>
     if (perAxisInterpolates.size() > 0) //something to combine
       {
       std::vector<ImageRegionConstIterator<TImage> > iterators;
-      
+
       for (int i = 0; i < perAxisInterpolates.size(); ++i)
         {
         ImageRegionConstIterator<TImage> it(perAxisInterpolates[i], m_Output->GetRequestedRegion());
         iterators.push_back(it);
         }
-      
+
       std::vector<typename TImage::PixelType> values;
       values.reserve(perAxisInterpolates.size());
-      
+
       ImageRegionIterator<TImage> it(m_Output, m_Output->GetRequestedRegion());
       while (!it.IsAtEnd())
         {
@@ -1723,7 +1784,7 @@ MorphologicalContourInterpolator<TImage>
             it.Set(val); //last written value stays
             }
           }
-      
+
         //next pixel
         ++it;
         for (int i = 0; i < perAxisInterpolates.size(); ++i)
