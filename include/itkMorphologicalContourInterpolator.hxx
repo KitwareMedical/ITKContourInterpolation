@@ -920,27 +920,30 @@ MorphologicalContourInterpolator<TImage>
   midConn->Allocate(true);
 
   ImageRegionConstIterator<BoolSliceType> seqIt(median, newRegion);
-  ImageRegionIterator<TImage> outIt(out, outRegion);
   ImageRegionIterator<SliceType> midIt(midConn, newRegion);
   
   //writing through one RLEImage iterator invalidates all the others
   //so this whole writing loop needs to be serialized
   static SimpleFastMutexLock mutex;
-  mutex.Lock();  
-  while (!outIt.IsAtEnd())
-    {
-    if (seqIt.Get())
+  mutex.Lock();
+  {
+    ImageRegionIterator<TImage> outIt(out, outRegion);
+    while (!outIt.IsAtEnd())
       {
-      if (outIt.Get() < label)
+      if (seqIt.Get())
         {
-        outIt.Set(label);
+        if (outIt.Get() < label)
+          {
+          outIt.Set(label);
+          }
+        midIt.Set(1);
         }
-      midIt.Set(1);
+      ++seqIt;
+      ++outIt;
+      ++midIt;
       }
-    ++seqIt;
-    ++outIt;
-    ++midIt;
-    }
+    //iterator destroyed here
+  }
   mutex.Unlock();
   WriteDebug(midConn, "C:\\midConn.nrrd");
 
