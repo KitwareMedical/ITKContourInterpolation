@@ -53,7 +53,7 @@ void WriteDebug(itk::SmartPointer<TImage> out, const char *filename)
   return; //tests run much faster
   //typedef ImageFileWriter<TImage> WriterType;
   //typename WriterType::Pointer w = WriterType::New();
-  //w->SetNumberOfThreads(1); //otherwise conflicts with C++11 threads
+  //w->SetNumberOfThreads(1); //excessive threading is counterproductive
   //w->SetInput(out);
   //w->SetFileName(filename);
   //try
@@ -73,7 +73,7 @@ void WriteDebug(itk::SmartPointer<Image<bool, dim> > out, const char *filename)
   typedef Image<unsigned char, dim>                      ucharImageType;
   typedef CastImageFilter<BoolImageType, ucharImageType> CastType;
   typename CastType::Pointer caster = CastType::New();
-  caster->SetNumberOfThreads(1); //otherwise conflicts with C++11 threads
+  caster->SetNumberOfThreads(1); //excessive threading is counterproductive
   caster->SetInput(out);
   WriteDebug<ucharImageType>(caster->GetOutput(), filename);
 }
@@ -430,17 +430,17 @@ MorphologicalContourInterpolator<TImage>
     m_CrossDilator[threadId] = CrossDilateType::New();
     m_BallDilator[threadId] = BallDilateType::New();
     m_And[threadId] = AndFilterType::New();
-    m_And[threadId]->SetNumberOfThreads(1); //otherwise conflicts with C++11 threads
+    m_And[threadId]->SetNumberOfThreads(1); //excessive threading is counterproductive
     typedef Size<BoolSliceType::ImageDimension> SizeType;
     SizeType size;
     size.Fill(1);
 
-    m_CrossDilator[threadId]->SetNumberOfThreads(1); //otherwise conflicts with C++11 threads
+    m_CrossDilator[threadId]->SetNumberOfThreads(1); //excessive threading is counterproductive
     m_CrossStructuringElement[threadId].SetRadius(size);
     m_CrossStructuringElement[threadId].CreateStructuringElement();
     m_CrossDilator[threadId]->SetKernel(m_CrossStructuringElement[threadId]);
 
-    m_BallDilator[threadId]->SetNumberOfThreads(1); //otherwise conflicts with C++11 threads
+    m_BallDilator[threadId]->SetNumberOfThreads(1); //excessive threading is counterproductive
     m_BallStructuringElement[threadId].SetRadius(size);
     m_BallStructuringElement[threadId].CreateStructuringElement();
     m_BallDilator[threadId]->SetKernel(m_BallStructuringElement[threadId]);
@@ -524,7 +524,7 @@ MorphologicalContourInterpolator<TImage>
   if (!initialized[threadId])
     {
     m_Or[threadId] = OrType::New();
-    m_Or[threadId]->SetNumberOfThreads(1); //otherwise conflicts with C++11 threads
+    m_Or[threadId]->SetNumberOfThreads(1); //excessive threading is counterproductive
     initialized[threadId] = true;
     }
   
@@ -577,7 +577,7 @@ MorphologicalContourInterpolator<TImage>
     {
     filter[threadId] = FilterType::New();
     filter[threadId]->SetUseImageSpacing(false); //interpolation algorithm calls for working in index space
-    filter[threadId]->SetNumberOfThreads(1); //otherwise conflicts with C++11 threads
+    filter[threadId]->SetNumberOfThreads(1); //excessive threading is counterproductive
     initialized[threadId] = true;
     }
   filter[threadId]->SetInput(mask);
@@ -689,9 +689,9 @@ MorphologicalContourInterpolator<TImage>
   if (!initialized[threadId])
     {
     threshold[threadId] = FloatBinarizerType::New();
-    threshold[threadId]->SetNumberOfThreads(1); //otherwise conflicts with C++11 threads
+    threshold[threadId]->SetNumberOfThreads(1); //excessive threading is counterproductive
     m_And[threadId] = AndFilterType::New();
-    m_And[threadId]->SetNumberOfThreads(1); //otherwise conflicts with C++11 threads
+    m_And[threadId]->SetNumberOfThreads(1); //excessive threading is counterproductive
     initialized[threadId] = true;
     }
   threshold[threadId]->SetInput(sdf);
@@ -858,7 +858,7 @@ MorphologicalContourInterpolator<TImage>
   if (!initialized[threadId])
     {
     sAnd[threadId] = AndSliceType::New();
-    sAnd[threadId]->SetNumberOfThreads(1); //otherwise conflicts with C++11 threads
+    sAnd[threadId]->SetNumberOfThreads(1); //excessive threading is counterproductive
     initialized[threadId] = true;
     }
   sAnd[threadId]->SetInput(0, iSlice);
@@ -920,25 +920,31 @@ MorphologicalContourInterpolator<TImage>
   midConn->Allocate(true);
 
   ImageRegionConstIterator<BoolSliceType> seqIt(median, newRegion);
-  ImageRegionIterator<TImage> outIt(out, outRegion);
   ImageRegionIterator<SliceType> midIt(midConn, newRegion);
+  
+  //writing through one RLEImage iterator invalidates all the others
+  //so this whole writing loop needs to be serialized
   static SimpleFastMutexLock mutex;
-  while (!outIt.IsAtEnd())
-    {
-    if (seqIt.Get())
+  mutex.Lock();
+  {
+    ImageRegionIterator<TImage> outIt(out, outRegion);
+    while (!outIt.IsAtEnd())
       {
-      mutex.Lock();
-      if (outIt.Get() < label)
+      if (seqIt.Get())
         {
-        outIt.Set(label);
+        if (outIt.Get() < label)
+          {
+          outIt.Set(label);
+          }
+        midIt.Set(1);
         }
-      mutex.Unlock();
-      midIt.Set(1);
+      ++seqIt;
+      ++outIt;
+      ++midIt;
       }
-    ++seqIt;
-    ++outIt;
-    ++midIt;
-    }
+    //iterator destroyed here
+  }
+  mutex.Unlock();
   WriteDebug(midConn, "C:\\midConn.nrrd");
 
   //recurse if needed
@@ -993,7 +999,7 @@ typename SliceType::IndexType translation, ThreadIdType threadId)
 
   typedef UnaryFunctorImageFilter<SliceType, BoolSliceType, MatchesID<TImage> > CastType;
   typename CastType::Pointer caster = CastType::New();
-  caster->SetNumberOfThreads(1); //otherwise conflicts with C++11 threads
+  caster->SetNumberOfThreads(1); //excessive threading is counterproductive
   caster->SetFunctor(matchesID);
   caster->SetInput(iConn);
   caster->Update();
