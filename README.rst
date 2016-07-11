@@ -5,9 +5,7 @@ Morphological Contour Interpolation
   :target: https://circleci.com/gh/KitwareMedical/ITKMorphologicalContourInterpolation
 
 An `ITK <http://itk.org>`_-based implementation of morphological contour
-interpolation off the paper:
-
-Based off the paper:
+interpolation based off the paper:
 
   Albu AB1, Beugeling T, Laurendeau D.
   "A morphology-based approach for interslice interpolation of anatomical slices from volumetric images."
