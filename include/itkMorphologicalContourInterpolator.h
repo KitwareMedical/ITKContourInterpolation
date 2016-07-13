@@ -158,6 +158,12 @@ public:
   /** Use ball instead of default cross structuring element for repeated dilations. */
   itkGetConstMacro(UseBallStructuringElement, bool);
 
+  /** If there is a pixel whose all 4-way neighbors belong the the same label
+  except along one axis, and along that axis its neighbors are 0 (background),
+  then that axis should be interpolated along. Interpolation is possible
+  along more than one axis. Updates LabeledSliceIndices.*/
+  void DetermineSliceOrientations();
+
   /** An std::set of slice indices which need to be interpolated. */
   typedef std::set<typename TImage::IndexValueType> SliceSetType;
 
@@ -228,12 +234,6 @@ protected:
 
   /** Does the real work. */
   virtual void GenerateData() ITK_OVERRIDE;
-
-  /** If there is a pixel whose all 4-way neighbors belong the the same label
-  except along one axis, and along that axis its neighbors are 0 (background),
-  then that axis should be interpolated along. Interpolation is possible
-  along more than one axis. */
-  void DetermineSliceOrientations();
 
   /** Determines correspondances between two slices and calls apropriate methods. */
   void InterpolateBetweenTwo(int axis, TImage *out, typename TImage::PixelType label,
@@ -326,10 +326,6 @@ protected:
   typename SliceType::IndexType Align(
     typename SliceType::Pointer iConn, typename TImage::PixelType iRegionId,
     typename SliceType::Pointer jConn, PixelList jRegionIds);
-
-  typedef FixedArray<bool, TImage::ImageDimension> OrientationType;
-  typedef itksys::hash_map<typename TImage::PixelType, OrientationType> OrientationsType;
-  OrientationsType m_Orientations;
 
   typedef itksys::hash_map<typename TImage::PixelType, typename TImage::RegionType> BoundingBoxesType;
   BoundingBoxesType m_BoundingBoxes; //bounding box for each label
