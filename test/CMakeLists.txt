@@ -16,7 +16,7 @@ function(JustInputTest ImageName Ext) #optional: Algo Axis Label
   endforeach()
   set(outImage "${ITK_TEST_OUTPUT_DIR}/${ImageName}${optArgs}.${Ext}")
   # set(imageNameOpt "${ImageName}${optArgs}") # only used for regression
-  
+
   itk_add_test( NAME itkMCI_JustInOut_${ImageName}${optArgs}
     COMMAND MorphologicalContourInterpolationTestDriver
     # --compare DATA{Baseline/${imageNameOpt}.${Ext}} ${outImage} # no regression
@@ -30,7 +30,7 @@ function(RegressionTest ImageName Ext) #optional: Algo Axis Label
   endforeach()
   set(outImage "${ITK_TEST_OUTPUT_DIR}/${ImageName}${optArgs}.${Ext}")
   set(imageNameOpt "${ImageName}${optArgs}")
-  
+
   itk_add_test( NAME itkMCI_${ImageName}${optArgs}
     COMMAND MorphologicalContourInterpolationTestDriver
     --compare DATA{Baseline/${imageNameOpt}.${Ext}} ${outImage}
