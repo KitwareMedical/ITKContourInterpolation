@@ -175,7 +175,7 @@ public:
   /** If default slice detection is not wanted, slice indices
   *   between which interpolation is done can be set using this method. */
   void SetLabeledSliceIndices(unsigned int axis, typename TImage::PixelType label,
-    std::vector<typename TImage::IndexValueType> indices)
+    const std::vector<typename TImage::IndexValueType> & indices)
     {
     m_LabeledSlices[axis][label] = SliceSetType().insert(indices.begin(), indices.end());
     this->Modified();
@@ -184,7 +184,7 @@ public:
   /** If default slice detection is not wanted, slice indices
   *   between which interpolation is done can be set using this method. */
   void SetLabeledSliceIndices(unsigned int axis, typename TImage::PixelType label,
-    SliceSetType indices)
+    const SliceSetType & indices)
     {
     m_LabeledSlices[axis][label] = indices;
     this->Modified();
@@ -227,7 +227,7 @@ protected:
   typedef Image<bool, TImage::ImageDimension - 1>  BoolSliceType;
 
   /** Are these two slices equal? */
-  bool ImagesEqual(typename BoolSliceType::Pointer a, typename BoolSliceType::Pointer b);
+  bool ImagesEqual(typename BoolSliceType::Pointer & a, typename BoolSliceType::Pointer & b);
 
   /** Does the real work. */
   virtual void GenerateData() ITK_OVERRIDE;
@@ -235,7 +235,7 @@ protected:
   /** Determines correspondances between two slices and calls apropriate methods. */
   void InterpolateBetweenTwo(int axis, TImage *out, typename TImage::PixelType label,
     typename TImage::IndexValueType i, typename TImage::IndexValueType j,
-    typename SliceType::Pointer iconn, typename SliceType::Pointer jconn,
+    typename SliceType::Pointer & iconn, typename SliceType::Pointer & jconn,
     ThreadIdType threadId);
 
   /** If interpolation is done along more than one axis,
@@ -248,78 +248,79 @@ protected:
   /** Slice i has a region, slice j does not */
   void Extrapolate(int axis, TImage *out, typename TImage::PixelType label,
     typename TImage::IndexValueType i, typename TImage::IndexValueType j,
-    typename SliceType::Pointer iConn, typename TImage::PixelType iRegionId,
+    typename SliceType::Pointer & iConn, typename TImage::PixelType iRegionId,
     ThreadIdType threadId);
 
 
   /** Creates a signed distance field image. */
   typename FloatSliceType::Pointer MaurerDM(
-    typename BoolSliceType::Pointer inImage, ThreadIdType threadId);
+    typename BoolSliceType::Pointer & inImage, ThreadIdType threadId);
 
   /** A sequence of conditional dilations starting with begin and reaching end.
   begin and end must cover the same region (size and index the same) */
   std::vector<typename BoolSliceType::Pointer> GenerateDilationSequence(
-    typename BoolSliceType::Pointer begin, typename BoolSliceType::Pointer end,
+    typename BoolSliceType::Pointer & begin, typename BoolSliceType::Pointer & end,
     ThreadIdType threadId);
 
   /** Finds an interpolating mask for these two aligned masks */
   typename BoolSliceType::Pointer FindMedianImageDilations(
-    typename BoolSliceType::Pointer intersection,
-    typename BoolSliceType::Pointer iMask, typename BoolSliceType::Pointer jMask,
+    typename BoolSliceType::Pointer & intersection,
+    typename BoolSliceType::Pointer & iMask, typename BoolSliceType::Pointer & jMask,
     ThreadIdType threadId);
 
   /** Finds an interpolating mask for these two aligned masks */
   typename BoolSliceType::Pointer FindMedianImageDistances(
-    typename BoolSliceType::Pointer intersection,
-    typename BoolSliceType::Pointer iMask, typename BoolSliceType::Pointer jMask,
+    typename BoolSliceType::Pointer & intersection,
+    typename BoolSliceType::Pointer & iMask, typename BoolSliceType::Pointer & jMask,
     ThreadIdType threadId);
 
   /** Build transition sequence and pick the median */
   void Interpolate1to1(int axis, TImage *out, typename TImage::PixelType label,
     typename TImage::IndexValueType i, typename TImage::IndexValueType j,
-    typename SliceType::Pointer iConn, typename TImage::PixelType iRegionId,
-    typename SliceType::Pointer jConn, typename TImage::PixelType jRegionId,
-    typename SliceType::IndexType translation, bool recursive, ThreadIdType threadId);
+    typename SliceType::Pointer & iConn, typename TImage::PixelType iRegionId,
+    typename SliceType::Pointer & jConn, typename TImage::PixelType jRegionId,
+    const typename SliceType::IndexType & translation, bool recursive, ThreadIdType threadId);
 
   typedef std::vector<typename TImage::PixelType> PixelList;
 
   /** Splits the bigger region and does N 1-to-1 interpolations */
   void Interpolate1toN(int axis, TImage *out, typename TImage::PixelType label,
     typename TImage::IndexValueType i, typename TImage::IndexValueType j,
-    typename SliceType::Pointer iConn, typename TImage::PixelType iRegionId,
-    typename SliceType::Pointer jConn, PixelList jRegionIds,
-    typename SliceType::IndexType translation, ThreadIdType threadId);
+    typename SliceType::Pointer & iConn, typename TImage::PixelType iRegionId,
+    typename SliceType::Pointer & jConn, const PixelList & jRegionIds,
+    const typename SliceType::IndexType & translation, ThreadIdType threadId);
 
   /** Crates a translated copy of part of the image which fits in the newRegion. */
-  typename SliceType::Pointer TranslateImage(typename SliceType::Pointer image,
-    typename SliceType::IndexType translation, typename SliceType::RegionType newRegion);
+  typename SliceType::Pointer TranslateImage(typename SliceType::Pointer & image,
+    const typename SliceType::IndexType & translation,
+    typename SliceType::RegionType newRegion);
 
   /** The returns cardingal of the symmetric distance between images.
   The images must cover the same region */
-  IdentifierType CardSymDifference(typename BoolSliceType::Pointer shape1,
-    typename BoolSliceType::Pointer shape2);
+  IdentifierType CardSymDifference(typename BoolSliceType::Pointer & shape1,
+    typename BoolSliceType::Pointer & shape2);
 
   /** Copied from ImageSource and changed to allocate a cleared buffer. */
   virtual void AllocateOutputs() ITK_OVERRIDE;
 
   /** Returns the centroid of given regions */
-  typename SliceType::IndexType Centroid(typename SliceType::Pointer conn, PixelList regionIds);
+  typename SliceType::IndexType Centroid(typename SliceType::Pointer & conn, const PixelList & regionIds);
 
   /** Calculates maximum intersection region for both slices given a translation.
   Both inputs are modified so that jRegion is a translated version of iRegion. */
-  void IntersectionRegions(typename SliceType::IndexType translation,
+  void IntersectionRegions(const typename SliceType::IndexType & translation,
     typename SliceType::RegionType & iRegion, typename SliceType::RegionType & jRegion);
 
   /** Returns number of intersecting pixels */
   IdentifierType Intersection(
-    typename SliceType::Pointer iConn, typename TImage::PixelType iRegionId,
-    typename SliceType::Pointer jConn, PixelList jRegionIds,
-    typename SliceType::IndexType translation);
+    typename SliceType::Pointer & iConn, typename TImage::PixelType iRegionId,
+    typename SliceType::Pointer & jConn, const PixelList & jRegionIds,
+    const typename SliceType::IndexType & translation);
 
   /** How much j needs to be translated to best align with i */
   typename SliceType::IndexType Align(
-    typename SliceType::Pointer iConn, typename TImage::PixelType iRegionId,
-    typename SliceType::Pointer jConn, PixelList jRegionIds);
+    typename SliceType::Pointer & iConn, typename TImage::PixelType iRegionId,
+    typename SliceType::Pointer & jConn, const PixelList & jRegionIds);
 
   typedef itksys::hash_map<typename TImage::PixelType, typename TImage::RegionType> BoundingBoxesType;
   BoundingBoxesType m_BoundingBoxes; //bounding box for each label
@@ -331,15 +332,15 @@ protected:
   *   Assumes both a valid region and a valid index.
   *   It can be invoked with 2D or 3D region, hence the additional template parameter. */
   template< typename T2 >
-  void ExpandRegion(typename T2::RegionType &region, typename T2::IndexType index);
+  void ExpandRegion(typename T2::RegionType &region, const typename T2::IndexType & index);
 
   /** Connected components of a specified region. */
-  typename SliceType::Pointer RegionedConnectedComponents(const typename TImage::RegionType region,
+  typename SliceType::Pointer RegionedConnectedComponents(const typename TImage::RegionType & region,
     typename TImage::PixelType label, IdentifierType &objectCount);
 
   /** Seed and mask must cover the same region (size and index the same). */
-  typename BoolSliceType::Pointer Dilate1(typename BoolSliceType::Pointer seed,
-    typename BoolSliceType::Pointer mask, ThreadIdType threadId);
+  typename BoolSliceType::Pointer Dilate1(typename BoolSliceType::Pointer & seed,
+    typename BoolSliceType::Pointer & mask, ThreadIdType threadId);
 
   typedef ExtractImageFilter< TImage, SliceType > RoiType;
   typename RoiType::Pointer m_RoI;
