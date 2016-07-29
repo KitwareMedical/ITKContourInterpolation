@@ -16,20 +16,12 @@
  *
  *=========================================================================*/
 
-#include "RLEImage/RLEImageScanlineIterator.h"
-#include "RLEImage/RLEImageRegionIterator.h"
-#include "RLEImage/RLERegionOfInterestImageFilter.h"
+#include "itkRLEImage.h"
 #include "itkImageFileReader.h"
 #include "itkImageFileWriter.h"
 #include "itkMorphologicalContourInterpolator.h"
 #include <cstdlib>
 #include <string>
-
-long int string2int(char *number)
-{
-  long res = strtol(number, NULL, 10);
-  return res;
-}
 
 template <typename ImageType>
 void doTest(std::string inFilename, std::string outFilename,
@@ -40,7 +32,7 @@ void doTest(std::string inFilename, std::string outFilename,
   reader->SetFileName(inFilename);
   reader->Update();
 
-  typedef RLEImage<typename ImageType::PixelType, ImageType::ImageDimension> myRLEImage;
+  typedef itk::RLEImage<typename ImageType::PixelType, ImageType::ImageDimension> myRLEImage;
   typedef itk::RegionOfInterestImageFilter<ImageType, myRLEImage> inConverterType;
   typename inConverterType::Pointer inConv = inConverterType::New();
   inConv->SetInput(reader->GetOutput());

@@ -9,6 +9,7 @@ itk_module(MorphologicalContourInterpolation
   TEST_DEPENDS
     ITKIOImageBase # typename
     ITKTestKernel
+    RLEImage
   EXCLUDE_FROM_DEFAULT
   DESCRIPTION
     "${DOCUMENTATION}"

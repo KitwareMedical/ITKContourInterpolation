@@ -6,8 +6,8 @@ set( MorphologicalContourInterpolationTests
 
 CreateTestDriver( MorphologicalContourInterpolation "${MorphologicalContourInterpolation-Test_LIBRARIES}" "${MorphologicalContourInterpolationTests}" )
 
-add_executable(runFromIDE manualTest.cxx ${MorphologicalContourInterpolationTests})
-target_link_libraries(runFromIDE ${MorphologicalContourInterpolation-Test_LIBRARIES})
+add_executable(manualTest manualTest.cxx ${MorphologicalContourInterpolationTests})
+target_link_libraries(manualTest ${MorphologicalContourInterpolation-Test_LIBRARIES})
 
 # used to produce an output which is then taken as a baseline for a regression test
 function(JustInputTest ImageName Ext) #optional: Algo Axis Label
