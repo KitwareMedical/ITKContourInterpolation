@@ -35,8 +35,8 @@ RUN git clone https://github.com/Kitware/KWStyle.git && \
   ninja install && \
   cd .. && rm -rf KWStyle*
 
-# 2016-01-12 v4.9rc03-110-g6dec0b3
-ENV ITK_GIT_TAG 6dec0b3064fb1c95d0cad027447ea852665c1ec0
+# 2016-07-29 master
+ENV ITK_GIT_TAG c7e7c79d0ebd2ee0dd69b34da3d0752a2e859dd8
 RUN git clone git://itk.org/ITK.git && \
   cd ITK && \
   git checkout ${ITK_GIT_TAG} && \
@@ -57,8 +57,24 @@ RUN git clone git://itk.org/ITK.git && \
     -DModule_ITKBinaryMathematicalMorphology:BOOL=ON \
     -DModule_ITKTestKernel:BOOL=ON \
     -DModule_ITKDistanceMap:BOOL=ON \
+    -DModule_ITKImageGrid:BOOL=ON \
+    -DModule_ITKIOImageBase:BOOL=ON \
     ../ITK && \
   ninja && \
   find . -name '*.o' -delete
+
+RUN git clone https://github.com/KitwareMedical/ITKRLEImage.git && \
+  cd ITKRLEImage && \
+  git checkout fa4a5aa5e37845b5b3d6cb6cbf69e75f2367f799 && \
+  mkdir ../ITKRLEImage-build && \
+  cd ../ITKRLEImage-build && \
+  cmake \
+    -G Ninja \
+    -DCMAKE_CXX_FLAGS='-std=c++11' \
+    -DCMAKE_INSTALL_PREFIX:PATH=/usr \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DITK_DIR=/usr/src/ITK-build \
+      ../ITKRLEImage && \
+  ninja
 
 RUN mkdir -p /usr/src/ITKMorphologicalContourInterpolation-build
