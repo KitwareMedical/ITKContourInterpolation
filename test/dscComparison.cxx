@@ -115,10 +115,6 @@ int main(int argc, char* argv[])
         outFilenameBase = argv[2];
         fout.open((outFilenameBase + ".csv").c_str(), std::ios::out);
     }
-    else
-    {
-        fout.set_rdbuf(std::cout.rdbuf());
-    }
     RegisterRequiredFactories();
 
     typedef itk::ImageFileReader < ImageType > ReaderType;
