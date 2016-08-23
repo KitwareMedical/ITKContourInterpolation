@@ -1,8 +1,15 @@
 itk_module_test()
 
+if(${MCI_TestWithRLEImage})
+set( MorphologicalContourInterpolationTests
+  itkMorphologicalContourInterpolationTest.cxx
+  itkMorphologicalContourInterpolationTestWithRLEImage.cxx
+  )
+else(${MCI_TestWithRLEImage})
 set( MorphologicalContourInterpolationTests
   itkMorphologicalContourInterpolationTest.cxx
   )
+endif(${MCI_TestWithRLEImage})
 
 CreateTestDriver( MorphologicalContourInterpolation "${MorphologicalContourInterpolation-Test_LIBRARIES}" "${MorphologicalContourInterpolationTests}" )
 
