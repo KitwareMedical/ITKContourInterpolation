@@ -146,9 +146,9 @@ MorphologicalContourInterpolator< TImage >
   m_UseDistanceTransform( true ),
   m_UseBallStructuringElement( false ),
   m_UseCustomSlicePositions( false ),
-  m_ThreadCount( MultiThreader::GetGlobalDefaultNumberOfThreads() ),
   m_MinAlignIters( pow( 2, TImage::ImageDimension ) ), // smaller of this and pixel count of the search image
   m_MaxAlignIters( pow( 6, TImage::ImageDimension ) ), // bigger of this and root of pixel count of the search image
+  m_ThreadCount( MultiThreader::GetGlobalDefaultNumberOfThreads() ),
   m_LabeledSlices( TImage::ImageDimension ) // initialize with empty sets
 {
   // set up pipeline for regioned connected components
@@ -250,7 +250,7 @@ MorphologicalContourInterpolator< TImage >
       if ( cTrue == 1 && cAdjacent == TImage::ImageDimension - 1 )
       // slice has empty adjacent space only along one axis
         {
-        if ( m_Axis == -1 || m_Axis == axis )
+        if ( m_Axis == -1 || m_Axis == int(axis) )
           {
           m_LabeledSlices[axis][val].insert( ind[axis] );
           }
@@ -307,7 +307,8 @@ MorphologicalContourInterpolator< TImage >
     }
   reg3.SetIndex( phIndex );
   phSlice->SetRegions( reg3 );
-  typename SliceType::IndexType t0 = { 0 };
+  typename SliceType::IndexType t0;
+  t0.Fill( 0 );
   Interpolate1to1( axis, out, label, i, j, iConn, iRegionId, phSlice, iRegionId, t0, false, threadId );
 } // >::Extrapolate
 
@@ -824,7 +825,7 @@ MorphologicalContourInterpolator< TImage >
 
   bool withinReq = true;
   typename TImage::RegionType reqRegion = this->GetOutput()->GetRequestedRegion();
-  for ( int d = 0; d < TImage::ImageDimension; d++ )
+  for ( unsigned d = 0; d < TImage::ImageDimension; d++ )
     {
     if ( outRegion.GetIndex( d ) < reqRegion.GetIndex( d ) ||
          outRegion.GetIndex( d ) + outRegion.GetSize( d ) >
@@ -1267,7 +1268,8 @@ MorphologicalContourInterpolator< TImage >
   // breadth first search starting from centroid, implicitly:
   // when intersection scores are equal, chooses the one closer to centroid
   std::queue< typename SliceType::IndexType > uncomputed;
-  typename SliceType::IndexType t0 = { 0 };
+  typename SliceType::IndexType t0;
+  t0.Fill( 0 );
   uncomputed.push( t0 ); // no translation - guaranteed to find a non-zero intersection
   uncomputed.push( ind ); // this introduces movement, and possibly has the same score
   searched->SetPixel( t0, true );
@@ -1290,7 +1292,7 @@ MorphologicalContourInterpolator< TImage >
       }
 
     // we breadth this search
-    if ( !m_HeuristicAlignment || maxScore == 0 || iter <= minIter || score > maxScore * 0.9 && iter <= maxIter )
+    if ( !m_HeuristicAlignment || maxScore == 0 || iter <= minIter || (score > maxScore * 0.9 && iter <= maxIter) )
       {
       for ( unsigned d = 0; d < SliceType::ImageDimension; d++ )
         {
@@ -1666,11 +1668,11 @@ MorphologicalContourInterpolator< TImage >
     {
     FixedArray< bool, TImage::ImageDimension > aggregate;
     aggregate.Fill( false );
-    for ( int i = 0; i < TImage::ImageDimension; i++ )
+    for ( unsigned i = 0; i < TImage::ImageDimension; i++ )
       {
       if ( this->m_Label == 0 ) // examine all labels
         {
-        for ( int l = 0; l < m_LabeledSlices[i].size(); l++ )
+        for ( unsigned l = 0; l < m_LabeledSlices[i].size(); l++ )
           {
           if ( m_LabeledSlices[i][l].size() > 1 )
             {
