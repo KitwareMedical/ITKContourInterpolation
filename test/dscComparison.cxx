@@ -27,9 +27,10 @@
 
 typedef unsigned char PixelType;
 const unsigned int dim = 3;
-typedef itk::Image<PixelType, dim> ImageType;
+typedef itk::Image< PixelType, dim > ImageType;
 
-ImageType::Pointer createSparseCopy(const ImageType::Pointer& inImage, ImageType::IndexType nth)
+ImageType::Pointer
+createSparseCopy(const ImageType::Pointer& inImage, ImageType::IndexType nth)
 {
   const ImageType::RegionType& lpr = inImage->GetLargestPossibleRegion();
 
@@ -38,26 +39,26 @@ ImageType::Pointer createSparseCopy(const ImageType::Pointer& inImage, ImageType
   outImage->SetRegions(lpr);
   outImage->Allocate(true);
 
-  itk::ImageRegionConstIterator<ImageType>     iIt(inImage, lpr);
-  itk::ImageRegionIteratorWithIndex<ImageType> oIt(outImage, lpr);
+  itk::ImageRegionConstIterator< ImageType > iIt(inImage, lpr);
+  itk::ImageRegionIteratorWithIndex< ImageType > oIt(outImage, lpr);
 
-  while( !oIt.IsAtEnd() )
+  while ( !oIt.IsAtEnd() )
     {
     const PixelType& val = iIt.Get();
-    if( val )
+    if ( val )
       {
       const ImageType::IndexType& ind = oIt.GetIndex();
-      bool                        write = false;
-      for( int axis = 0; axis < dim; axis++ )
+      bool write = false;
+      for ( unsigned axis = 0; axis < dim; axis++ )
         {
-        if( ind[axis] % nth[axis] == 0 )
+        if ( ind[axis] % nth[axis] == 0 )
           {
           write = true;
           break;
           }
         }
 
-      if( write )
+      if ( write )
         {
         oIt.Set(val);
         }
@@ -69,30 +70,31 @@ ImageType::Pointer createSparseCopy(const ImageType::Pointer& inImage, ImageType
   return outImage;
 }
 
-void calcOverlap(const ImageType::Pointer& autoSeg, const ImageType::Pointer& groundTruth,
-                 unsigned long long& tpCount, unsigned long long& fpCount, unsigned long long& fnCount)
+void
+calcOverlap(const ImageType::Pointer& autoSeg, const ImageType::Pointer& groundTruth,
+  unsigned long long& tpCount, unsigned long long& fpCount, unsigned long long& fnCount)
 {
   const ImageType::RegionType& lpr = groundTruth->GetLargestPossibleRegion();
 
-  itk::ImageRegionConstIterator<ImageType> itAS(autoSeg, lpr);
-  itk::ImageRegionConstIterator<ImageType> itGT(groundTruth, lpr);
+  itk::ImageRegionConstIterator< ImageType > itAS(autoSeg, lpr);
+  itk::ImageRegionConstIterator< ImageType > itGT(groundTruth, lpr);
   tpCount = 0;
   fpCount = 0;
   fnCount = 0;
 
-  while( !itAS.IsAtEnd() )
+  while ( !itAS.IsAtEnd() )
     {
-    if( itAS.Get() != 0 && itAS.Get() == itGT.Get() )
+    if ( itAS.Get() != 0 && itAS.Get() == itGT.Get() )
       {
-      tpCount++;       // true positive
+      tpCount++; // true positive
       }
-    else if( itAS.Get() != 0 )
+    else if ( itAS.Get() != 0 )
       {
-      fpCount++;       // false positive
+      fpCount++; // false positive
       }
-    if( itAS.Get() == 0 && itGT.Get() != 0 )
+    if ( itAS.Get() == 0 && itGT.Get() != 0 )
       {
-      fnCount++;       // false negative
+      fnCount++; // false negative
       }
 
     ++itAS;
@@ -100,59 +102,60 @@ void calcOverlap(const ImageType::Pointer& autoSeg, const ImageType::Pointer& gr
     }
 }
 
-int main(int argc, char* argv[])
+int
+main(int argc, char* argv[])
 {
-  if( argc < 2 )
+  if ( argc < 2 )
     {
     std::cerr << "Usage: " << argv[0];
     std::cerr << " inputImage [outFilenameBase] [saveIntermediateImages]\n";
     return 1;
     }
-  bool         saveImages = argc > 3;
-  std::string  outFilenameBase;
+  bool saveImages = argc > 3;
+  std::string outFilenameBase;
   std::fstream fout;
-  if( argc > 2 )
+  if ( argc > 2 )
     {
     outFilenameBase = argv[2];
     fout.open( (outFilenameBase + ".csv").c_str(), std::ios::out);
     }
   RegisterRequiredFactories();
 
-  typedef itk::ImageFileReader<ImageType> ReaderType;
-  typename ReaderType::Pointer reader = ReaderType::New();
+  typedef itk::ImageFileReader< ImageType > ReaderType;
+  ReaderType::Pointer reader = ReaderType::New();
   reader->SetFileName(argv[1]);
   reader->Update();
   ImageType::Pointer inImage = reader->GetOutput();
   inImage->DisconnectPipeline();
 
-  typedef itk::MorphologicalContourInterpolator<ImageType> mciType;
-  typename mciType::Pointer mci = mciType::New();
-  mci->SetUseBallStructuringElement(true);   // test cross?
+  typedef itk::MorphologicalContourInterpolator< ImageType > mciType;
+  mciType::Pointer mci = mciType::New();
+  mci->SetUseBallStructuringElement(true); // test cross?
 
-  typedef itk::ImageFileWriter<ImageType> WriterType;
-  typename WriterType::Pointer writer = WriterType::New();
+  typedef itk::ImageFileWriter< ImageType > WriterType;
+  WriterType::Pointer writer = WriterType::New();
   writer->SetUseCompression(true);
 
   const ImageType::RegionType& lpr = inImage->GetLargestPossibleRegion();
-  ImageType::IndexType         maxInd;
-  for( int axis = 0; axis < dim; axis++ )
+  ImageType::IndexType maxInd;
+  for ( unsigned axis = 0; axis < dim; axis++ )
     {
     maxInd[axis] = itk::IndexValueType(lpr.GetSize(axis) );
     }
   fout << "Image, nth, axis, time, TP, FP, FN, TN\n";
   // the big for loop which does the work
-  for( int sparsity = 2; sparsity <= 8; sparsity++ )
+  for ( int sparsity = 2; sparsity <= 8; sparsity++ )
     {
     unsigned long long tpCount, fpCount, fnCount;
-    for( int axis = -1; axis < int(dim); axis++ )
+    for ( int axis = -1; axis < int(dim); axis++ )
       {
       mci->SetAxis(axis);
       ImageType::IndexType axisSparsity = maxInd;
-      if( axis < 0 )      // all axes
+      if ( axis < 0 ) // all axes
         {
-        for( int axis = 0; axis < dim; axis++ )
+        for ( unsigned a = 0; a < dim; a++ )
           {
-          axisSparsity[axis] = sparsity;
+          axisSparsity[a] = sparsity;
           }
         }
       else // just one axis
@@ -174,7 +177,7 @@ int main(int argc, char* argv[])
       fout << ", " << tpCount << ", " << fpCount << ", " << fnCount << ", ";
       fout << (lpr.GetNumberOfPixels() - tpCount - fpCount - fnCount) << std::endl;
 
-      if( saveImages )
+      if ( saveImages )
         {
         std::cout << outFilenameBase + '_' + char(sparsity + '0') + char(axis + 'X') + "\nWriting sparse... ";
         writer->SetInput(sparseImage);
