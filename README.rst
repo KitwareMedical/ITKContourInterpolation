@@ -1,8 +1,15 @@
 Morphological Contour Interpolation
 ===================================
 
-.. image:: https://circleci.com/gh/KitwareMedical/ITKMorphologicalContourInterpolation.svg?style=svg
+.. image:: https://circleci.com/gh/KitwareMedical/ITKMorphologicalContourInterpolation.svg?style=shield
   :target: https://circleci.com/gh/KitwareMedical/ITKMorphologicalContourInterpolation
+
+.. image:: https://travis-ci.org/KitwareMedical/ITKMorphologicalContourInterpolation.svg?branch=master
+    :target: https://travis-ci.org/KitwareMedical/ITKMorphologicalContourInterpolation
+
+.. image:: https://img.shields.io/appveyor/ci/thewtex/itkmorphologicalcontourinterpolation.svg
+    :target: https://ci.appveyor.com/project/thewtex/itkmorphologicalcontourinterpolation
+
 
 An `ITK <http://itk.org>`_-based implementation of morphological contour
 interpolation based off the paper:
