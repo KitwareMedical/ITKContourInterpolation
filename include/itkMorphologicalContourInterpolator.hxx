@@ -566,9 +566,9 @@ MorphologicalContourInterpolator< TImage >
   long long bestDiff = LLONG_MAX;
   for ( unsigned b = 0; b < maxSize; b++ )
     {
-    long long iS = std::abs( iTotal - iSum[b] + jSum[b] );
-    long long jS = std::abs( jTotal - jSum[b] + iSum[b] );
-    long long diff = std::abs( iS - jS );
+    long long iS = Math::abs( iTotal - iSum[b] + jSum[b] );
+    long long jS = Math::abs( jTotal - jSum[b] + iSum[b] );
+    long long diff = Math::abs( iS - jS );
     if ( diff < bestDiff )
       {
       bestDiff = diff;
@@ -859,7 +859,7 @@ MorphologicalContourInterpolator< TImage >
     } // iterator destroyed here
 
   // recurse if needed
-  if ( std::abs( i - j ) > 2 )
+  if ( Math::abs( i - j ) > 2 )
     {
     PixelList regionIDs;
     regionIDs.push_back( 1 );
@@ -870,8 +870,8 @@ MorphologicalContourInterpolator< TImage >
       ( j > reqRegion.GetIndex( axis ) + IndexValueType( reqRegion.GetSize( axis ) ) ? +1 : 0 );
     int mReq = mid < reqRegion.GetIndex( axis ) ? -1 :
       ( mid > reqRegion.GetIndex( axis ) + IndexValueType( reqRegion.GetSize( axis ) ) ? +1 : 0 );
-    bool first = std::abs( i - mid ) > 1 && std::abs( iReq + mReq ) <= 1; // i-mid?
-    bool second = std::abs( j - mid ) > 1 && std::abs( jReq + mReq ) <= 1; // j-mid?
+    bool first = Math::abs( i - mid ) > 1 && Math::abs( iReq + mReq ) <= 1; // i-mid?
+    bool second = Math::abs( j - mid ) > 1 && Math::abs( jReq + mReq ) <= 1; // j-mid?
 
     if ( first )
       {
@@ -1589,7 +1589,7 @@ MorphologicalContourInterpolator< TImage >
           ( *next > reqRegion.GetIndex( axis ) + IndexValueType( reqRegion.GetSize( axis ) ) ? +1 : 0 );
 
         if ( *prev + 1 < *next // only if they are not adjacent slices
-             && std::abs(iReq + jReq) <= 1 ) // and not out of the requested region
+             && Math::abs(iReq + jReq) <= 1 ) // and not out of the requested region
         // unless they are on opposite ends
           {
           SegmentBetweenTwo< TImage > s;
