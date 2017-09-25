@@ -1,6 +1,6 @@
 PROJECT(mciExample CXX)
 
-FIND_PACKAGE(ITK REQUIRED)
+FIND_PACKAGE(ITK REQUIRED COMPONENTS ITKMorphologicalContourInterpolation ITKSmoothing ITKIOImageBase)
 INCLUDE(${ITK_USE_FILE})
   
 ADD_EXECUTABLE(mciExample mciExample.cpp)
