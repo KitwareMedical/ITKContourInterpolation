@@ -3,12 +3,14 @@ itk_module_test()
 set( MorphologicalContourInterpolationTests
   itkMorphologicalContourInterpolationTest.cxx
   )
+set(TestExe itkMorphologicalContourInterpolationTest)
 
 if(${MCI_TestWithRLEImage})
-list(APPEND MorphologicalContourInterpolationTests
-  itkMorphologicalContourInterpolationTestWithRLEImage.cxx
+  list(APPEND MorphologicalContourInterpolationTests
+    itkMorphologicalContourInterpolationTestWithRLEImage.cxx
   )
-endif(${MCI_TestWithRLEImage})
+  set(TestExe itkMorphologicalContourInterpolationTestWithRLEImage)
+endif()
 
 CreateTestDriver( MorphologicalContourInterpolation "${MorphologicalContourInterpolation-Test_LIBRARIES}" "${MorphologicalContourInterpolationTests}" )
 
@@ -20,21 +22,20 @@ target_link_libraries(dscComparison ${MorphologicalContourInterpolation-Test_LIB
 
 # used to produce an output which is then taken as a baseline for a regression test
 function(JustInputTest ImageName Ext) #optional: Axis Label
-  foreach(f ${ARGN}) #create unique test name
+  foreach(f ${ARGN}) # for creating unique test name
     set(optArgs "${optArgs}_${f}")
   endforeach()
   foreach(algo B;C;T)
-    set(outImage "${ITK_TEST_OUTPUT_DIR}/${ImageName}_${algo}${optArgs}.${Ext}")
+    set(imageAlgoArgs "${ImageName}_${algo}${optArgs}")
 
-    itk_add_test( NAME itkMCI_JustInOut_${ImageName}_${algo}${optArgs}
+    itk_add_test( NAME itkMCI_JustInOut_${imageAlgoArgs}
       COMMAND MorphologicalContourInterpolationTestDriver
-      itkMorphologicalContourInterpolationTest
-        DATA{Input/${ImageName}.${Ext}} ${outImage} ${algo} ${ARGN})
+      ${TestExe} DATA{Input/${ImageName}.${Ext}} "${ITK_TEST_OUTPUT_DIR}/${imageAlgoArgs}.${Ext}" ${algo} ${ARGN})
   endforeach()
 endfunction()
 
 function(RegressionTest RunsLong ImageName Ext) #optional: Axis Label
-  foreach(f ${ARGN}) #create unique test name
+  foreach(f ${ARGN}) # for creating unique test name
     set(optArgs "${optArgs}_${f}")
   endforeach()
 
@@ -42,22 +43,16 @@ function(RegressionTest RunsLong ImageName Ext) #optional: Axis Label
   # C = repeated dilations with cross structuring element
   # T = distance transform (not geodesic!)
   foreach(algo B;C;T)
-    set(outImage "${ITK_TEST_OUTPUT_DIR}/${ImageName}_${algo}${optArgs}.${Ext}")
-    set(imageNameOpt "${ImageName}_${algo}${optArgs}")
+    set(imageAlgoArgs "${ImageName}_${algo}${optArgs}")
+    set(outImage "${ITK_TEST_OUTPUT_DIR}/${imageAlgoArgs}.${Ext}")
 
-    if(${MCI_TestWithRLEImage})
-      set(TestExe itkMorphologicalContourInterpolationTestWithRLEImage)
-    else(${MCI_TestWithRLEImage})
-      set(TestExe itkMorphologicalContourInterpolationTest)
-    endif(${MCI_TestWithRLEImage})
-
-    itk_add_test( NAME itkMCI_${ImageName}_${algo}${optArgs}
+    itk_add_test( NAME itkMCI_${imageAlgoArgs}
       COMMAND MorphologicalContourInterpolationTestDriver
-      --compare DATA{Baseline/${imageNameOpt}.${Ext}} ${outImage}
-      ${TestExe}
-        DATA{Input/${ImageName}.${Ext}} ${outImage} ${algo} ${ARGN})
+      --compare DATA{Baseline/${imageAlgoArgs}.${Ext}} ${outImage}
+      ${TestExe} DATA{Input/${ImageName}.${Ext}} ${outImage} ${algo} ${ARGN})
+
     if (RunsLong)
-      set_property(TEST itkMCI_${ImageName}_${algo}${optArgs} APPEND PROPERTY LABELS RUNS_LONG)
+      set_property(TEST itkMCI_${imageAlgoArgs} APPEND PROPERTY LABELS RUNS_LONG)
     endif()
   endforeach()
 endfunction()
