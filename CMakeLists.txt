@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 2.8.9)
 project(MorphologicalContourInterpolation)
 
-SET(MCI_Algorithm "B" CACHE STRING
+set(MCI_Algorithm "B" CACHE STRING
 "Which algorithm should be used for testing
 the module MorphologicalContourInterpolation.
 
