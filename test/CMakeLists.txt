@@ -2,13 +2,8 @@ itk_module_test()
 
 set( MorphologicalContourInterpolationTests
   itkMorphologicalContourInterpolationTest.cxx
-  )
-
-if(${MCI_TestWithRLEImage})
-list(APPEND MorphologicalContourInterpolationTests
   itkMorphologicalContourInterpolationTestWithRLEImage.cxx
   )
-endif(${MCI_TestWithRLEImage})
 
 CreateTestDriver( MorphologicalContourInterpolation "${MorphologicalContourInterpolation-Test_LIBRARIES}" "${MorphologicalContourInterpolationTests}" )
 
@@ -19,39 +14,60 @@ add_executable(dscComparison dscComparison.cxx)
 target_link_libraries(dscComparison ${MorphologicalContourInterpolation-Test_LIBRARIES})
 
 # used to produce an output which is then taken as a baseline for a regression test
-function(JustInputTest ImageName Ext) #optional: Algo Axis Label
-  foreach(f ${ARGN}) #create unique test name
+function(JustInputTest ImageName Ext) #optional: Axis Label
+  foreach(f ${ARGN}) # for creating unique test name
     set(optArgs "${optArgs}_${f}")
   endforeach()
-  set(outImage "${ITK_TEST_OUTPUT_DIR}/${ImageName}${optArgs}.${Ext}")
-  # set(imageNameOpt "${ImageName}${optArgs}") # only used for regression
+  foreach(algo B;C;T)
+    set(imageAlgoArgs "${ImageName}_${algo}${optArgs}")
 
-  itk_add_test( NAME itkMCI_JustInOut_${ImageName}${optArgs}
-    COMMAND MorphologicalContourInterpolationTestDriver
-    # --compare DATA{Baseline/${imageNameOpt}.${Ext}} ${outImage} # no regression
-    itkMorphologicalContourInterpolationTest
-      DATA{Input/${ImageName}.${Ext}} ${outImage} ${ARGN})
+    itk_add_test( NAME itkMCI_JustInOut_${imageAlgoArgs}
+      COMMAND MorphologicalContourInterpolationTestDriver
+      itkMorphologicalContourInterpolationTest
+      DATA{Input/${ImageName}.${Ext}} "${ITK_TEST_OUTPUT_DIR}/${imageAlgoArgs}.${Ext}" ${algo} ${ARGN})
+  endforeach()
 endfunction()
 
-function(RegressionTest ImageName Ext) #optional: Algo Axis Label
-  foreach(f ${ARGN}) #create unique test name
+function(RegressionTest RunsLong ImageName Ext) #optional: Axis Label
+  foreach(f ${ARGN}) # for creating unique test name
     set(optArgs "${optArgs}_${f}")
   endforeach()
-  set(outImage "${ITK_TEST_OUTPUT_DIR}/${ImageName}${optArgs}.${Ext}")
-  set(imageNameOpt "${ImageName}${optArgs}")
-  if(${MCI_TestWithRLEImage})
-    itk_add_test( NAME rleMCI_${ImageName}${optArgs}
+
+  # B = repeated dilations with ball structuring element
+  # C = repeated dilations with cross structuring element
+  # T = distance transform (not geodesic!)
+  foreach(algo B;C;T)
+    set(imageAlgoArgs "${ImageName}_${algo}${optArgs}")
+    set(outImage "${ITK_TEST_OUTPUT_DIR}/${imageAlgoArgs}.${Ext}")
+
+    itk_add_test( NAME itkMCI_${imageAlgoArgs}
       COMMAND MorphologicalContourInterpolationTestDriver
-      --compare DATA{Baseline/${imageNameOpt}.${Ext}} ${outImage}
-      itkMorphologicalContourInterpolationTestWithRLEImage
-        DATA{Input/${ImageName}.${Ext}} ${outImage} ${ARGN})
-  else(${MCI_TestWithRLEImage})
-    itk_add_test( NAME itkMCI_${ImageName}${optArgs}
-      COMMAND MorphologicalContourInterpolationTestDriver
-      --compare DATA{Baseline/${imageNameOpt}.${Ext}} ${outImage}
+      --compare DATA{Baseline/${imageAlgoArgs}.${Ext}} ${outImage}
       itkMorphologicalContourInterpolationTest
-        DATA{Input/${ImageName}.${Ext}} ${outImage} ${ARGN})
-  endif(${MCI_TestWithRLEImage})
+      DATA{Input/${ImageName}.${Ext}} ${outImage} ${algo} ${ARGN})
+
+    itk_add_test( NAME itkMCIRLE_${imageAlgoArgs}
+      COMMAND MorphologicalContourInterpolationTestDriver
+      --compare DATA{Baseline/${imageAlgoArgs}.${Ext}} ${outImage}
+      itkMorphologicalContourInterpolationTestWithRLEImage
+      DATA{Input/${ImageName}.${Ext}} ${outImage} ${algo} ${ARGN})
+
+    set_property(TEST itkMCI_${imageAlgoArgs} APPEND PROPERTY LABELS MCI_PLAIN)
+    set_property(TEST itkMCIRLE_${imageAlgoArgs} APPEND PROPERTY LABELS MCI_RLE)
+
+    if (RunsLong)
+      set_property(TEST itkMCI_${imageAlgoArgs} APPEND PROPERTY LABELS RUNS_LONG)
+      set_property(TEST itkMCIRLE_${imageAlgoArgs} APPEND PROPERTY LABELS RUNS_LONG)
+    endif()
+  endforeach()
+endfunction()
+
+function(RegressionTestShort)
+  RegressionTest(No ${ARGN})
+endfunction()
+
+function(RegressionTestLong)
+  RegressionTest(Yes ${ARGN})
 endfunction()
 
 # functional comparison using Dice Similarity Coefficient
@@ -60,145 +76,146 @@ function(DSCTest ImageName Ext)
 
   itk_add_test( NAME itkMCI_DSC_${ImageName}
     COMMAND dscComparison DATA{Input/${ImageName}.${Ext}} ${outFilenameBase} ${ARGN})
+  set_property(TEST itkMCI_DSC_${ImageName} APPEND PROPERTY LABELS RUNS_LONG)
 endfunction()
 
 # Handcrafted tests
-RegressionTest(Empty nrrd ${MCI_Algorithm})
-RegressionTest(NoSlices nrrd ${MCI_Algorithm}) #interpolation should not be invoked (output==input)
-RegressionTest(Micro1 nrrd ${MCI_Algorithm})
-RegressionTest(SimplestOneToOne nrrd ${MCI_Algorithm})
-RegressionTest(OneToOne nrrd ${MCI_Algorithm})
-RegressionTest(OneToThree nrrd ${MCI_Algorithm})
-RegressionTest(ExtrapolationAppearing nrrd ${MCI_Algorithm})
-RegressionTest(DoubleTwoLabelBranching nrrd ${MCI_Algorithm})
-RegressionTest(TwoAxisDoubleTwoLabelBC nrrd ${MCI_Algorithm})
-RegressionTest(AccidentalMiddleSliceSeg nrrd ${MCI_Algorithm})
-RegressionTest(SevenLabels nrrd ${MCI_Algorithm})
-RegressionTest(FullEnd nrrd ${MCI_Algorithm})
-RegressionTest(1MN1 nrrd ${MCI_Algorithm}) # double sided many broken into many + 1
-RegressionTest(ManyToMany16 nrrd ${MCI_Algorithm})
-RegressionTest(ManyToMany nrrd ${MCI_Algorithm})
-RegressionTest(GridSeg nrrd ${MCI_Algorithm})
-RegressionTest(GridSeg2 nrrd ${MCI_Algorithm})
+RegressionTestShort(Empty nrrd)
+RegressionTestShort(NoSlices nrrd) #interpolation should not be invoked (output==input)
+RegressionTestShort(Micro1 nrrd)
+RegressionTestShort(SimplestOneToOne nrrd)
+RegressionTestShort(OneToOne nrrd)
+RegressionTestShort(OneToThree nrrd)
+RegressionTestShort(ExtrapolationAppearing nrrd)
+RegressionTestShort(DoubleTwoLabelBranching nrrd)
+RegressionTestShort(TwoAxisDoubleTwoLabelBC nrrd)
+RegressionTestShort(AccidentalMiddleSliceSeg nrrd)
+RegressionTestShort(SevenLabels nrrd)
+RegressionTestShort(FullEnd nrrd)
+RegressionTestShort(1MN1 nrrd) # double sided many broken into many + 1
+RegressionTestShort(ManyToMany16 nrrd)
+RegressionTestShort(ManyToMany nrrd)
+RegressionTestShort(GridSeg nrrd)
+RegressionTestShort(GridSeg2 nrrd)
 
 # Per axis/label tests
-RegressionTest(GridSeg nrrd ${MCI_Algorithm} 0)
-RegressionTest(GridSeg nrrd ${MCI_Algorithm} 1)
-RegressionTest(GridSeg nrrd ${MCI_Algorithm} 2)
-RegressionTest(GridSeg2 nrrd ${MCI_Algorithm} 0)
-RegressionTest(GridSeg2 nrrd ${MCI_Algorithm} 1)
-RegressionTest(GridSeg2 nrrd ${MCI_Algorithm} 2)
-RegressionTest(ThreeAxisFourLabelConflict nrrd ${MCI_Algorithm})
-RegressionTest(ThreeAxisFourLabelConflict nrrd ${MCI_Algorithm} 0)
-RegressionTest(ThreeAxisFourLabelConflict nrrd ${MCI_Algorithm} 1)
-RegressionTest(ThreeAxisFourLabelConflict nrrd ${MCI_Algorithm} 2)
-RegressionTest(ThreeAxisFourLabelConflict nrrd ${MCI_Algorithm} 0 0) # equals to _0
-RegressionTest(ThreeAxisFourLabelConflict nrrd ${MCI_Algorithm} 1 1)
-RegressionTest(ThreeAxisFourLabelConflict nrrd ${MCI_Algorithm} 2 3) # equals to _2
-RegressionTest(ThreeAxisFourLabelConflict nrrd ${MCI_Algorithm} 0 4) # equals to _0
-RegressionTest(ThreeAxisFourLabelConflict nrrd ${MCI_Algorithm} 1 2)
-RegressionTest(ThreeAxisFourLabelConflict nrrd ${MCI_Algorithm} 2 2) # does not modify image
+RegressionTestShort(GridSeg nrrd 0)
+RegressionTestShort(GridSeg nrrd 1)
+RegressionTestShort(GridSeg nrrd 2)
+RegressionTestShort(GridSeg2 nrrd 0)
+RegressionTestShort(GridSeg2 nrrd 1)
+RegressionTestShort(GridSeg2 nrrd 2)
+RegressionTestShort(ThreeAxisFourLabelConflict nrrd)
+RegressionTestShort(ThreeAxisFourLabelConflict nrrd 0)
+RegressionTestShort(ThreeAxisFourLabelConflict nrrd 1)
+RegressionTestShort(ThreeAxisFourLabelConflict nrrd 2)
+RegressionTestShort(ThreeAxisFourLabelConflict nrrd 0 0) # equals to _0
+RegressionTestShort(ThreeAxisFourLabelConflict nrrd 1 1)
+RegressionTestShort(ThreeAxisFourLabelConflict nrrd 2 3) # equals to _2
+RegressionTestShort(ThreeAxisFourLabelConflict nrrd 0 4) # equals to _0
+RegressionTestShort(ThreeAxisFourLabelConflict nrrd 1 2)
+RegressionTestShort(ThreeAxisFourLabelConflict nrrd 2 2) # does not modify image
 
 # Paul's single axis tests
-RegressionTest(105769moving nii.gz ${MCI_Algorithm}) #defaults: all axes all labels
-RegressionTest(105769moving nii.gz ${MCI_Algorithm} 2) #axis 2
-RegressionTest(105769moving nii.gz ${MCI_Algorithm} -1 0) #all axes all labels
-RegressionTest(105769moving nii.gz ${MCI_Algorithm} -1 1) #all axes label 1
-RegressionTest(105769moving nii.gz ${MCI_Algorithm} -1 2) #all axes label 2
-RegressionTest(105769moving nii.gz ${MCI_Algorithm} 2 1) #axis 2 label 1
-RegressionTest(105769moving nii.gz ${MCI_Algorithm} 2 2) #axis 2 label 2
-RegressionTest(105769fixed nii.gz ${MCI_Algorithm}) #defaults: all axes all labels
-RegressionTest(105769fixed nii.gz ${MCI_Algorithm} 2) #axis 2
-RegressionTest(105769fixed nii.gz ${MCI_Algorithm} -1 0) #all axes all labels
-RegressionTest(105769fixed nii.gz ${MCI_Algorithm} -1 1) #all axes label 1
-RegressionTest(105769fixed nii.gz ${MCI_Algorithm} -1 2) #all axes label 2
-RegressionTest(105769fixed nii.gz ${MCI_Algorithm} 2 1) #axis 2 label 1
-RegressionTest(105769fixed nii.gz ${MCI_Algorithm} 2 2) #axis 2 label 2
+RegressionTestShort(105769moving nii.gz) #defaults: all axes all labels
+RegressionTestShort(105769moving nii.gz 2) #axis 2
+RegressionTestShort(105769moving nii.gz -1 0) #all axes all labels
+RegressionTestShort(105769moving nii.gz -1 1) #all axes label 1
+RegressionTestShort(105769moving nii.gz -1 2) #all axes label 2
+RegressionTestShort(105769moving nii.gz 2 1) #axis 2 label 1
+RegressionTestShort(105769moving nii.gz 2 2) #axis 2 label 2
+RegressionTestShort(105769fixed nii.gz) #defaults: all axes all labels
+RegressionTestShort(105769fixed nii.gz 2) #axis 2
+RegressionTestShort(105769fixed nii.gz -1 0) #all axes all labels
+RegressionTestShort(105769fixed nii.gz -1 1) #all axes label 1
+RegressionTestShort(105769fixed nii.gz -1 2) #all axes label 2
+RegressionTestShort(105769fixed nii.gz 2 1) #axis 2 label 1
+RegressionTestShort(105769fixed nii.gz 2 2) #axis 2 label 2
 
 # 64816L_amygdala_int
-RegressionTest(64816L_amygdala_int nii.gz ${MCI_Algorithm})
-RegressionTest(64816L_amygdala_int nii.gz ${MCI_Algorithm} 0)
-RegressionTest(64816L_amygdala_int nii.gz ${MCI_Algorithm} 1)
-RegressionTest(64816L_amygdala_int nii.gz ${MCI_Algorithm} 2)
-RegressionTest(64816L_amygdala_int nii.gz ${MCI_Algorithm} 0 1)
-RegressionTest(64816L_amygdala_int nii.gz ${MCI_Algorithm} 0 2)
-RegressionTest(64816L_amygdala_int nii.gz ${MCI_Algorithm} 0 3)
-RegressionTest(64816L_amygdala_int nii.gz ${MCI_Algorithm} 0 4)
-RegressionTest(64816L_amygdala_int nii.gz ${MCI_Algorithm} 1 1)
-RegressionTest(64816L_amygdala_int nii.gz ${MCI_Algorithm} 1 2)
-RegressionTest(64816L_amygdala_int nii.gz ${MCI_Algorithm} 1 3)
-RegressionTest(64816L_amygdala_int nii.gz ${MCI_Algorithm} 1 4)
-RegressionTest(64816L_amygdala_int nii.gz ${MCI_Algorithm} 2 1)
-RegressionTest(64816L_amygdala_int nii.gz ${MCI_Algorithm} 2 2)
-RegressionTest(64816L_amygdala_int nii.gz ${MCI_Algorithm} 2 3)
-RegressionTest(64816L_amygdala_int nii.gz ${MCI_Algorithm} 2 4)
+RegressionTestShort(64816L_amygdala_int nii.gz)
+RegressionTestShort(64816L_amygdala_int nii.gz 0)
+RegressionTestShort(64816L_amygdala_int nii.gz 1)
+RegressionTestShort(64816L_amygdala_int nii.gz 2)
+RegressionTestShort(64816L_amygdala_int nii.gz 0 1)
+RegressionTestShort(64816L_amygdala_int nii.gz 0 2)
+RegressionTestShort(64816L_amygdala_int nii.gz 0 3)
+RegressionTestShort(64816L_amygdala_int nii.gz 0 4)
+RegressionTestShort(64816L_amygdala_int nii.gz 1 1)
+RegressionTestShort(64816L_amygdala_int nii.gz 1 2)
+RegressionTestShort(64816L_amygdala_int nii.gz 1 3)
+RegressionTestShort(64816L_amygdala_int nii.gz 1 4)
+RegressionTestShort(64816L_amygdala_int nii.gz 2 1)
+RegressionTestShort(64816L_amygdala_int nii.gz 2 2)
+RegressionTestShort(64816L_amygdala_int nii.gz 2 3)
+RegressionTestShort(64816L_amygdala_int nii.gz 2 4)
 
 # 64816L_amygdala_fin
-RegressionTest(64816L_amygdala_fin nii.gz ${MCI_Algorithm})
-RegressionTest(64816L_amygdala_fin nii.gz ${MCI_Algorithm} 0)
-RegressionTest(64816L_amygdala_fin nii.gz ${MCI_Algorithm} 1)
-RegressionTest(64816L_amygdala_fin nii.gz ${MCI_Algorithm} 2)
-RegressionTest(64816L_amygdala_fin nii.gz ${MCI_Algorithm} 0 1)
-RegressionTest(64816L_amygdala_fin nii.gz ${MCI_Algorithm} 0 2)
-RegressionTest(64816L_amygdala_fin nii.gz ${MCI_Algorithm} 0 3)
-RegressionTest(64816L_amygdala_fin nii.gz ${MCI_Algorithm} 0 4)
-RegressionTest(64816L_amygdala_fin nii.gz ${MCI_Algorithm} 1 1)
-RegressionTest(64816L_amygdala_fin nii.gz ${MCI_Algorithm} 1 2)
-RegressionTest(64816L_amygdala_fin nii.gz ${MCI_Algorithm} 1 3)
-RegressionTest(64816L_amygdala_fin nii.gz ${MCI_Algorithm} 1 4)
-RegressionTest(64816L_amygdala_fin nii.gz ${MCI_Algorithm} 2 1)
-RegressionTest(64816L_amygdala_fin nii.gz ${MCI_Algorithm} 2 2)
-RegressionTest(64816L_amygdala_fin nii.gz ${MCI_Algorithm} 2 3)
-RegressionTest(64816L_amygdala_fin nii.gz ${MCI_Algorithm} 2 4)
+RegressionTestShort(64816L_amygdala_fin nii.gz)
+RegressionTestShort(64816L_amygdala_fin nii.gz 0)
+RegressionTestShort(64816L_amygdala_fin nii.gz 1)
+RegressionTestShort(64816L_amygdala_fin nii.gz 2)
+RegressionTestShort(64816L_amygdala_fin nii.gz 0 1)
+RegressionTestShort(64816L_amygdala_fin nii.gz 0 2)
+RegressionTestShort(64816L_amygdala_fin nii.gz 0 3)
+RegressionTestShort(64816L_amygdala_fin nii.gz 0 4)
+RegressionTestShort(64816L_amygdala_fin nii.gz 1 1)
+RegressionTestShort(64816L_amygdala_fin nii.gz 1 2)
+RegressionTestShort(64816L_amygdala_fin nii.gz 1 3)
+RegressionTestShort(64816L_amygdala_fin nii.gz 1 4)
+RegressionTestShort(64816L_amygdala_fin nii.gz 2 1)
+RegressionTestShort(64816L_amygdala_fin nii.gz 2 2)
+RegressionTestShort(64816L_amygdala_fin nii.gz 2 3)
+RegressionTestShort(64816L_amygdala_fin nii.gz 2 4)
 
 # 65239R_amygdala_int
-RegressionTest(65239R_amygdala_int nii.gz ${MCI_Algorithm})
-RegressionTest(65239R_amygdala_int nii.gz ${MCI_Algorithm} 0)
-RegressionTest(65239R_amygdala_int nii.gz ${MCI_Algorithm} 1)
-RegressionTest(65239R_amygdala_int nii.gz ${MCI_Algorithm} 2)
-RegressionTest(65239R_amygdala_int nii.gz ${MCI_Algorithm} 0 1)
-RegressionTest(65239R_amygdala_int nii.gz ${MCI_Algorithm} 0 2)
-RegressionTest(65239R_amygdala_int nii.gz ${MCI_Algorithm} 0 3)
-RegressionTest(65239R_amygdala_int nii.gz ${MCI_Algorithm} 0 4)
-RegressionTest(65239R_amygdala_int nii.gz ${MCI_Algorithm} 1 1)
-RegressionTest(65239R_amygdala_int nii.gz ${MCI_Algorithm} 1 2)
-RegressionTest(65239R_amygdala_int nii.gz ${MCI_Algorithm} 1 3)
-RegressionTest(65239R_amygdala_int nii.gz ${MCI_Algorithm} 1 4)
-RegressionTest(65239R_amygdala_int nii.gz ${MCI_Algorithm} 2 1)
-RegressionTest(65239R_amygdala_int nii.gz ${MCI_Algorithm} 2 2)
-RegressionTest(65239R_amygdala_int nii.gz ${MCI_Algorithm} 2 3)
-RegressionTest(65239R_amygdala_int nii.gz ${MCI_Algorithm} 2 4)
+RegressionTestShort(65239R_amygdala_int nii.gz)
+RegressionTestShort(65239R_amygdala_int nii.gz 0)
+RegressionTestShort(65239R_amygdala_int nii.gz 1)
+RegressionTestShort(65239R_amygdala_int nii.gz 2)
+RegressionTestShort(65239R_amygdala_int nii.gz 0 1)
+RegressionTestShort(65239R_amygdala_int nii.gz 0 2)
+RegressionTestShort(65239R_amygdala_int nii.gz 0 3)
+RegressionTestShort(65239R_amygdala_int nii.gz 0 4)
+RegressionTestShort(65239R_amygdala_int nii.gz 1 1)
+RegressionTestShort(65239R_amygdala_int nii.gz 1 2)
+RegressionTestShort(65239R_amygdala_int nii.gz 1 3)
+RegressionTestShort(65239R_amygdala_int nii.gz 1 4)
+RegressionTestShort(65239R_amygdala_int nii.gz 2 1)
+RegressionTestShort(65239R_amygdala_int nii.gz 2 2)
+RegressionTestShort(65239R_amygdala_int nii.gz 2 3)
+RegressionTestShort(65239R_amygdala_int nii.gz 2 4)
 
 # 65239R_amygdala_fin
-RegressionTest(65239R_amygdala_fin nii.gz ${MCI_Algorithm})
-RegressionTest(65239R_amygdala_fin nii.gz ${MCI_Algorithm} 0)
-RegressionTest(65239R_amygdala_fin nii.gz ${MCI_Algorithm} 1)
-RegressionTest(65239R_amygdala_fin nii.gz ${MCI_Algorithm} 2)
-RegressionTest(65239R_amygdala_fin nii.gz ${MCI_Algorithm} 0 1)
-RegressionTest(65239R_amygdala_fin nii.gz ${MCI_Algorithm} 0 2)
-RegressionTest(65239R_amygdala_fin nii.gz ${MCI_Algorithm} 0 3)
-RegressionTest(65239R_amygdala_fin nii.gz ${MCI_Algorithm} 0 4)
-RegressionTest(65239R_amygdala_fin nii.gz ${MCI_Algorithm} 1 1)
-RegressionTest(65239R_amygdala_fin nii.gz ${MCI_Algorithm} 1 2)
-RegressionTest(65239R_amygdala_fin nii.gz ${MCI_Algorithm} 1 3)
-RegressionTest(65239R_amygdala_fin nii.gz ${MCI_Algorithm} 1 4)
-RegressionTest(65239R_amygdala_fin nii.gz ${MCI_Algorithm} 2 1)
-RegressionTest(65239R_amygdala_fin nii.gz ${MCI_Algorithm} 2 2)
-RegressionTest(65239R_amygdala_fin nii.gz ${MCI_Algorithm} 2 3)
-RegressionTest(65239R_amygdala_fin nii.gz ${MCI_Algorithm} 2 4)
+RegressionTestShort(65239R_amygdala_fin nii.gz)
+RegressionTestShort(65239R_amygdala_fin nii.gz 0)
+RegressionTestShort(65239R_amygdala_fin nii.gz 1)
+RegressionTestShort(65239R_amygdala_fin nii.gz 2)
+RegressionTestShort(65239R_amygdala_fin nii.gz 0 1)
+RegressionTestShort(65239R_amygdala_fin nii.gz 0 2)
+RegressionTestShort(65239R_amygdala_fin nii.gz 0 3)
+RegressionTestShort(65239R_amygdala_fin nii.gz 0 4)
+RegressionTestShort(65239R_amygdala_fin nii.gz 1 1)
+RegressionTestShort(65239R_amygdala_fin nii.gz 1 2)
+RegressionTestShort(65239R_amygdala_fin nii.gz 1 3)
+RegressionTestShort(65239R_amygdala_fin nii.gz 1 4)
+RegressionTestShort(65239R_amygdala_fin nii.gz 2 1)
+RegressionTestShort(65239R_amygdala_fin nii.gz 2 2)
+RegressionTestShort(65239R_amygdala_fin nii.gz 2 3)
+RegressionTestShort(65239R_amygdala_fin nii.gz 2 4)
 
 # Long-running handcrafted tests
-RegressionTest(BigZ nrrd ${MCI_Algorithm})
-RegressionTest(BigZ nrrd ${MCI_Algorithm} 0)
-RegressionTest(BigZ nrrd ${MCI_Algorithm} 1)
-RegressionTest(BigZ nrrd ${MCI_Algorithm} 2)
-RegressionTest(FaceRoI nrrd ${MCI_Algorithm})
-RegressionTest(FaceRoI nrrd ${MCI_Algorithm} 0)
-RegressionTest(FaceRoI nrrd ${MCI_Algorithm} 1)
-RegressionTest(FaceRoI nrrd ${MCI_Algorithm} 2)
+RegressionTestLong(BigZ nrrd)
+RegressionTestLong(BigZ nrrd 0)
+RegressionTestLong(BigZ nrrd 1)
+RegressionTestLong(BigZ nrrd 2)
+RegressionTestLong(FaceRoI nrrd)
+RegressionTestLong(FaceRoI nrrd 0)
+RegressionTestLong(FaceRoI nrrd 1)
+RegressionTestLong(FaceRoI nrrd 2)
 
 # Non-3D tests
-RegressionTest(FourD nrrd ${MCI_Algorithm})
+RegressionTestShort(FourD nrrd)
 
 # dscComparison (crops)
 DSCTest(c2l  mha saveImages)
