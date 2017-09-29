@@ -52,6 +52,9 @@ function(RegressionTest RunsLong ImageName Ext) #optional: Axis Label
       itkMorphologicalContourInterpolationTestWithRLEImage
       DATA{Input/${ImageName}.${Ext}} ${outImage} ${algo} ${ARGN})
 
+    set_property(TEST itkMCI_${imageAlgoArgs} APPEND PROPERTY LABELS MCI_PLAIN)
+    set_property(TEST itkMCIRLE_${imageAlgoArgs} APPEND PROPERTY LABELS MCI_RLE)
+
     if (RunsLong)
       set_property(TEST itkMCI_${imageAlgoArgs} APPEND PROPERTY LABELS RUNS_LONG)
       set_property(TEST itkMCIRLE_${imageAlgoArgs} APPEND PROPERTY LABELS RUNS_LONG)
