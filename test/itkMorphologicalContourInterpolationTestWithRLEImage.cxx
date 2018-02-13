@@ -27,13 +27,13 @@ template <typename ImageType>
 void doTest(std::string inFilename, std::string outFilename,
   bool UseDistanceTransform, bool ball, int axis, int label)
 {
-  typedef itk::ImageFileReader < ImageType > ReaderType;
+  using ReaderType = itk::ImageFileReader < ImageType >;
   typename ReaderType::Pointer reader = ReaderType::New();
   reader->SetFileName(inFilename);
   reader->Update();
 
-  typedef itk::RLEImage<typename ImageType::PixelType, ImageType::ImageDimension> myRLEImage;
-  typedef itk::RegionOfInterestImageFilter<ImageType, myRLEImage> inConverterType;
+  using myRLEImage = itk::RLEImage<typename ImageType::PixelType, ImageType::ImageDimension>;
+  using inConverterType = itk::RegionOfInterestImageFilter<ImageType, myRLEImage>;
   typename inConverterType::Pointer inConv = inConverterType::New();
   inConv->SetInput(reader->GetOutput());
   inConv->SetRegionOfInterest(reader->GetOutput()->GetLargestPossibleRegion());
@@ -49,7 +49,7 @@ void doTest(std::string inFilename, std::string outFilename,
   //  reg.SetSize(i, (reg.GetSize(i) + 1) / 2);
   //  }
 
-  typedef itk::MorphologicalContourInterpolator<myRLEImage> mciType;
+  using mciType = itk::MorphologicalContourInterpolator<myRLEImage>;
   typename mciType::Pointer mci = mciType::New();
   mci->SetInput(test);
   mci->SetUseDistanceTransform(UseDistanceTransform);
@@ -57,13 +57,13 @@ void doTest(std::string inFilename, std::string outFilename,
   mci->SetAxis(axis);
   mci->SetLabel(label);
 
-  typedef itk::RegionOfInterestImageFilter<myRLEImage, ImageType> outConverterType;
+  using outConverterType = itk::RegionOfInterestImageFilter<myRLEImage, ImageType>;
   typename outConverterType::Pointer outConv = outConverterType::New();
   outConv->SetInput(mci->GetOutput());
   outConv->SetRegionOfInterest(reg);
   outConv->Update();
 
-  typedef itk::ImageFileWriter< ImageType > WriterType;
+  using WriterType = itk::ImageFileWriter< ImageType >;
   typename WriterType::Pointer writer = WriterType::New();
   writer->SetFileName(outFilename);
   writer->SetInput(outConv->GetOutput());
@@ -112,7 +112,7 @@ int itkMorphologicalContourInterpolationTestWithRLEImage( int argc, char* argv[]
     label=strtol(argv[5], nullptr, 10);
     }
 
-  typedef itk::ImageIOBase::IOComponentType ScalarPixelType;
+  using ScalarPixelType = itk::ImageIOBase::IOComponentType;
   itk::ImageIOBase::Pointer imageIO = itk::ImageIOFactory::CreateImageIO(
     inputImageFileName, itk::ImageIOFactory::ReadMode);
   if (!imageIO)
