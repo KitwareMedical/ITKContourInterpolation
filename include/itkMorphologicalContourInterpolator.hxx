@@ -31,11 +31,11 @@
 #include "itkObjectFactory.h"
 #include "itkOrImageFilter.h"
 #include "itkSignedMaurerDistanceMapImageFilter.h"
-#include "itkSimpleFastMutexLock.h"
 #include "itkUnaryFunctorImageFilter.h"
 #include "itkProgressTransformer.h"
 #include <algorithm>
 #include <climits>
+#include <mutex>
 #include <queue>
 #include <utility>
 #include <vector>
@@ -750,13 +750,13 @@ MorphologicalContourInterpolator< TImage >
       }
     }
 
-  static SimpleFastMutexLock mutex;
+  static std::mutex mutexLock;
   if ( withinReq ) // else we should not write it
     {
     seqIt.GoToBegin();
     // writing through one RLEImage iterator invalidates all the others
     // so this whole writing loop needs to be serialized
-    mutex.Lock();
+    std::lock_guard< std::mutex > mutexHolder( mutexLock );
     ImageRegionIterator< TImage > outIt( out, outRegion );
     while ( !outIt.IsAtEnd() )
       {
@@ -767,8 +767,6 @@ MorphologicalContourInterpolator< TImage >
       ++seqIt;
       ++outIt;
       }
-
-    mutex.Unlock();
     } // iterator destroyed here
 
   // recurse if needed
