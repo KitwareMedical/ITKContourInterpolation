@@ -28,7 +28,7 @@ int main(int argc, char * argv[])
     int smoothingRadius = 2;
     if (argc >= 4)
       {
-      smoothingRadius = atoi(argv[3]);
+      smoothingRadius = std::stoi(argv[3]);
       }
 
     using MedianType = itk::MedianImageFilter<ImageType, ImageType>;
