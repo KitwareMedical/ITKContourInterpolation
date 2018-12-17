@@ -1,15 +1,24 @@
-Morphological Contour Interpolation
-===================================
+ITKMorphologicalContourInterpolation
+====================================
 
-.. image:: https://circleci.com/gh/KitwareMedical/ITKMorphologicalContourInterpolation.svg?style=shield
-  :target: https://circleci.com/gh/KitwareMedical/ITKMorphologicalContourInterpolation
+.. |CircleCI| image:: https://circleci.com/gh/KitwareMedical/ITKMorphologicalContourInterpolation.svg?style=shield
+    :target: https://circleci.com/gh/KitwareMedical/ITKMorphologicalContourInterpolation
 
-.. image:: https://travis-ci.org/KitwareMedical/ITKMorphologicalContourInterpolation.svg?branch=master
+.. |TravisCI| image:: https://travis-ci.org/KitwareMedical/ITKMorphologicalContourInterpolation.svg?branch=master
     :target: https://travis-ci.org/KitwareMedical/ITKMorphologicalContourInterpolation
 
-.. image:: https://img.shields.io/appveyor/ci/thewtex/itkmorphologicalcontourinterpolation.svg
+.. |AppVeyor| image:: https://img.shields.io/appveyor/ci/thewtex/itkmorphologicalcontourinterpolation.svg
     :target: https://ci.appveyor.com/project/thewtex/itkmorphologicalcontourinterpolation
 
+=========== =========== ===========
+   Linux      macOS       Windows
+=========== =========== ===========
+|CircleCI|  |TravisCI|  |AppVeyor|
+=========== =========== ===========
+
+
+Overview
+--------
 
 An `ITK <http://itk.org>`_-based implementation of morphological contour
 interpolation based off the paper:
@@ -25,25 +34,38 @@ Documentation can be found in the `Insight Journal article
 
   Zukić D., Vicory J., McCormick M., Wisse L., Gerig G., Yushkevich P., Aylward S.
   "ND Morphological Contour Interpolation",
-  The Insight Journal,
-  January-December, 2016.
-  http://insight-journal.org/browse/publication/977
+  The Insight Journal. January-December, 2016.
   http://hdl.handle.net/10380/3563
+  http://insight-journal.org/browse/publication/977
+
+Installation
+------------
+
+Since ITK 4.11.0, this module is available in the ITK source tree as a remote
+module. To enable it, set::
+
+  Module_MorphologicalContourInterpolation:BOOL=ON
+
+in ITK's CMake build configuration.
+
+Python
+^^^^^^
 
 To install the Python packages::
 
   python -m pip install --upgrade pip
   python -m pip install itk-morphologicalcontourinterpolation
 
-Since ITK 4.11.0, this module is available in the ITK source tree as a Remote
-module.  To enable it, set::
 
-  Module_MorphologicalContourInterpolation:BOOL=ON
+License
+-------
 
-in ITK's CMake build configuration.
+This software is distributed under the Apache 2.0 license. Please see
+the *LICENSE* file for details.
+
 
 Acknowledgements
 ----------------
 
-This work is supported by NIH grant R01 EB014346, “Continued development and
+This work is supported by NIH grant R01 EB014346, "Continued development and
 maintenance of the ITK-SNAP 3D image segmentation software."
