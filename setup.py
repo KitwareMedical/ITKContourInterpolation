@@ -19,15 +19,13 @@ setup(
     packages=['itk'],
     package_dir={'itk': 'itk'},
     download_url=r'https://github.com/KitwareMedical/ITKMorphologicalContourInterpolation',
-    description=r'Interslice interpolations of label images based on their morphology .',
-    long_description='ITK is an open-source, cross-platform library that '
-                     'provides developers with an extensive suite of software '
-                     'tools for image analysis. This package implements morphological contour interpolation. '
-                     'For more information, see  '
-                     'Zukić D., Vicory J., McCormick M., Wisse L., Gerig G., Yushkevich P., Aylward S. '
-                     '"ND Morphological Contour Interpolation" '
-                     'http://insight-journal.org/browse/publication/977 '
-                     'http://hdl.handle.net/10380/3563 ',
+    description=r'Image morphological contour interpolation.',
+    long_description='itk-morphologicalcontourinterpolation provides classes '
+                     'to perform image morphological contour interpolation.\n'
+                     'Please refer to:\n'
+                     'Zukić Dž., Vicory J., McCormick M., Wisse L., Gerig G., Yushkevich P., Aylward S. '
+                     '"nD Morphological Contour Interpolation", '
+                     'Insight Journal, January-December 2016, http://hdl.handle.net/10380/3563.',
     classifiers=[
         "License :: OSI Approved :: Apache Software License",
         "Programming Language :: Python",
@@ -48,8 +46,8 @@ setup(
         "Operating System :: MacOS"
         ],
     license='Apache',
-    keywords='ITK InsightToolkit',
-    url=r'https://itk.org/',
+    keywords='ITK InsightToolkit Segmentation Interpolation-methods',
+    url=r'https://github.com/KitwareMedical/ITKMorphologicalContourInterpolation',
     install_requires=[
         r'itk'
     ]
