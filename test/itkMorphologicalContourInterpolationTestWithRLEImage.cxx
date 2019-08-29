@@ -114,7 +114,7 @@ int itkMorphologicalContourInterpolationTestWithRLEImage( int argc, char* argv[]
 
   using ScalarPixelType = itk::ImageIOBase::IOComponentType;
   itk::ImageIOBase::Pointer imageIO = itk::ImageIOFactory::CreateImageIO(
-    inputImageFileName, itk::ImageIOFactory::ReadMode);
+    inputImageFileName, itk::ImageIOFactory::FileModeType::ReadMode);
   if (!imageIO)
     {
     std::cerr << "Could not CreateImageIO for: " << inputImageFileName << std::endl;
