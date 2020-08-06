@@ -1,22 +1,6 @@
 ITKMorphologicalContourInterpolation
 ====================================
 
-.. |CircleCI| image:: https://circleci.com/gh/KitwareMedical/ITKMorphologicalContourInterpolation.svg?style=shield
-    :target: https://circleci.com/gh/KitwareMedical/ITKMorphologicalContourInterpolation
-
-.. |TravisCI| image:: https://travis-ci.org/KitwareMedical/ITKMorphologicalContourInterpolation.svg?branch=master
-    :target: https://travis-ci.org/KitwareMedical/ITKMorphologicalContourInterpolation
-
-.. |AppVeyor| image:: https://img.shields.io/appveyor/ci/thewtex/itkmorphologicalcontourinterpolation.svg
-    :target: https://ci.appveyor.com/project/thewtex/itkmorphologicalcontourinterpolation
-
-=========== =========== ===========
-   Linux      macOS       Windows
-=========== =========== ===========
-|CircleCI|  |TravisCI|  |AppVeyor|
-=========== =========== ===========
-
-
 Overview
 --------
 
