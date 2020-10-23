@@ -1,21 +1,15 @@
 ITKMorphologicalContourInterpolation
 ====================================
 
-.. |CircleCI| image:: https://circleci.com/gh/KitwareMedical/ITKMorphologicalContourInterpolation.svg?style=shield
-    :target: https://circleci.com/gh/KitwareMedical/ITKMorphologicalContourInterpolation
+.. image:: https://github.com/KitwareMedical/ITKMorphologicalContourInterpolation/workflows/Build,%20test,%20package/badge.svg
 
-.. |TravisCI| image:: https://travis-ci.org/KitwareMedical/ITKMorphologicalContourInterpolation.svg?branch=master
-    :target: https://travis-ci.org/KitwareMedical/ITKMorphologicalContourInterpolation
+.. image:: https://img.shields.io/pypi/v/itk-morphologicalcontourinterpolation.svg
+    :target: https://pypi.python.org/pypi/itk-morphologicalcontourinterpolation
+    :alt: PyPI
 
-.. |AppVeyor| image:: https://img.shields.io/appveyor/ci/thewtex/itkmorphologicalcontourinterpolation.svg
-    :target: https://ci.appveyor.com/project/thewtex/itkmorphologicalcontourinterpolation
-
-=========== =========== ===========
-   Linux      macOS       Windows
-=========== =========== ===========
-|CircleCI|  |TravisCI|  |AppVeyor|
-=========== =========== ===========
-
+.. image:: https://img.shields.io/badge/License-Apache%202.0-blue.svg
+    :target: https://github.com/KitwareMedical/ITKMorphologicalContourInterpolation/blob/master/LICENSE)
+    :alt: License
 
 Overview
 --------

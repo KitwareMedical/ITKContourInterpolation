@@ -13,7 +13,7 @@ except ImportError:
 
 setup(
     name='itk-morphologicalcontourinterpolation',
-    version='1.0.0',
+    version='1.0.1',
     author='Dženan Zukić',
     author_email='community@itk.org',
     packages=['itk'],
@@ -49,6 +49,6 @@ setup(
     keywords='ITK InsightToolkit Segmentation Interpolation-methods',
     url=r'https://github.com/KitwareMedical/ITKMorphologicalContourInterpolation',
     install_requires=[
-        r'itk'
+        r'itk>=5.1.1'
     ]
     )
