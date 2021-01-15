@@ -49,6 +49,6 @@ setup(
     keywords='ITK InsightToolkit Segmentation Interpolation-methods',
     url=r'https://github.com/KitwareMedical/ITKMorphologicalContourInterpolation',
     install_requires=[
-        r'itk>=5.1.1'
+        r'itk>=5.2rc1'
     ]
     )
