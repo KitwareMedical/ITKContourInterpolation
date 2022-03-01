@@ -1422,9 +1422,9 @@ MorphologicalContourInterpolator< TImage >::InterpolateAlong( int axis, TImage* 
               jconn->DisconnectPipeline();
               int jReq = *next < reqRegion.GetIndex( axis ) ? -1 : ( *next > reqRegion.GetIndex( axis ) + IndexValueType( reqRegion.GetSize( axis ) ) ? +1 : 0 );
 
-              if ( *prev + 1 < *next                  // only if they are not adjacent slices
+              if ( *prev + 1 < *next                       // only if they are not adjacent slices
                    && itk::Math::abs( iReq + jReq ) <= 1 ) // and not out of the requested region
-                                                      // unless they are on opposite ends
+                                                           // unless they are on opposite ends
                 {
                   SegmentBetweenTwo< TImage > s;
                   s.axis = axis;
