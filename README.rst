@@ -14,7 +14,7 @@ ITKMorphologicalContourInterpolation
 Overview
 --------
 
-An `ITK <http://itk.org>`_-based implementation of morphological contour
+An `ITK <https://itk.org>`_-based implementation of morphological contour
 interpolation based off the paper:
 
   Albu AB1, Beugeling T, Laurendeau D.
@@ -24,13 +24,13 @@ interpolation based off the paper:
   doi: 10.1109/TBME.2008.921158.
 
 Documentation can be found in the `Insight Journal article
-<http://www.insight-journal.org/browse/publication/977>`_::
+<https://www.insight-journal.org/browse/publication/977>`_::
 
   Zukić D., Vicory J., McCormick M., Wisse L., Gerig G., Yushkevich P., Aylward S.
   "ND Morphological Contour Interpolation",
   The Insight Journal. January-December, 2016.
-  http://hdl.handle.net/10380/3563
-  http://insight-journal.org/browse/publication/977
+  https://hdl.handle.net/10380/3563
+  https://insight-journal.org/browse/publication/977
 
 Installation
 ------------

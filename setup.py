@@ -25,7 +25,7 @@ setup(
                      'Please refer to:\n'
                      'Zukić Dž., Vicory J., McCormick M., Wisse L., Gerig G., Yushkevich P., Aylward S. '
                      '"nD Morphological Contour Interpolation", '
-                     'Insight Journal, January-December 2016, http://hdl.handle.net/10380/3563.',
+                     'Insight Journal, January-December 2016, https://hdl.handle.net/10380/3563.',
     classifiers=[
         "License :: OSI Approved :: Apache Software License",
         "Programming Language :: Python",
