@@ -121,14 +121,14 @@ jobs:
     - name: Build and test
       if: matrix.os != 'windows-2022'
       run: |
-        ctest --output-on-failure -j 2 -V -S dashboard.cmake
+        ctest --output-on-failure -V -S dashboard.cmake
 
     - name: Build and test
       if: matrix.os == 'windows-2022'
       shell: cmd
       run: |
         call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
-        ctest --output-on-failure -j 2 -V -S dashboard.cmake
+        ctest --output-on-failure -V -S dashboard.cmake
 
   python-build-workflow:
     uses: InsightSoftwareConsortium/ITKRemoteModuleBuildTestPackageAction/.github/workflows/build-test-package-python.yml@b114bdd01a16855f57df0a973e665e61ac83355d
