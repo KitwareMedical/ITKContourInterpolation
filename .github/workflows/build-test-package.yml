@@ -3,7 +3,7 @@ name: Build, test, package
 on: [push,pull_request]
 
 env:
-  itk-git-tag: "v5.3.0"
+  itk-git-tag: "v5.4rc2"
 
 jobs:
   build-test-cxx:
@@ -131,6 +131,6 @@ jobs:
         ctest --output-on-failure -V -S dashboard.cmake
 
   python-build-workflow:
-    uses: InsightSoftwareConsortium/ITKRemoteModuleBuildTestPackageAction/.github/workflows/build-test-package-python.yml@b114bdd01a16855f57df0a973e665e61ac83355d
+    uses: InsightSoftwareConsortium/ITKRemoteModuleBuildTestPackageAction/.github/workflows/build-test-package-python.yml@3f63de316255a285b0cac4c819d3d45649738999
     secrets:
       pypi_password: ${{ secrets.pypi_password }}
