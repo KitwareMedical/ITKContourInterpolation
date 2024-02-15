@@ -1,6 +1,6 @@
 {
   "name": "@itk-wasm/morphological-contour-interpolation",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "packageManager": "pnpm@8.11.0",
   "description": "N-D morphology-based approach for interslice interpolation of anatomical slices from volumetric images.",
   "type": "module",
