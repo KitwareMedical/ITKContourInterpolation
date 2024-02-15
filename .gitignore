@@ -26,3 +26,6 @@
 *.exe
 *.out
 *.app
+
+# wasm build
+node_modules/
