@@ -15,14 +15,14 @@ importers:
         specifier: ^1.9.7
         version: 1.9.7
       itk-wasm:
-        specifier: ^1.0.0-b.166
-        version: 1.0.0-b.166
+        specifier: ^1.0.0-b.173
+        version: 1.0.0-b.173
 
   wasm/typescript:
     dependencies:
       itk-wasm:
-        specifier: 1.0.0-b.165
-        version: 1.0.0-b.165
+        specifier: 1.0.0-b.173
+        version: 1.0.0-b.173
     devDependencies:
       '@itk-wasm/image-io':
         specifier: ^1.1.0
@@ -721,7 +721,7 @@ packages:
     resolution: {integrity: sha512-2uAeBC5F0U/N6FaOLe0MVoOA2h3hizwTBuyZIwaVYoEzCav5a2ZDoCneC9FEpPR6G4VtVvzTlF/G6Eo4d8ofuA==}
     dependencies:
       axios: 1.6.7
-      itk-wasm: 1.0.0-b.166
+      itk-wasm: 1.0.0-b.173
       mime-types: 2.1.35
     transitivePeerDependencies:
       - debug
@@ -730,7 +730,7 @@ packages:
   /@itk-wasm/mesh-io@1.1.0:
     resolution: {integrity: sha512-zB+bgbvkWjUmCqjTnw4CSfPfEJr4QaiO/XdDse+0t8GjCcdjqplDIyudCABbzsLjQ+vVZ1t4RsRLnuZJ90+j5Q==}
     dependencies:
-      itk-wasm: 1.0.0-b.166
+      itk-wasm: 1.0.0-b.173
       mime-types: 2.1.35
     transitivePeerDependencies:
       - debug
@@ -1262,7 +1262,6 @@ packages:
   /chalk@5.3.0:
     resolution: {integrity: sha512-dLitG79d+GV1Nb/VYcCDFivJeK1hiukt9QjRNVOsUtTy1rR1YJsmpGGTZ3qJos+uw7WmWF4wUwBd9jxjocFC2w==}
     engines: {node: ^12.17.0 || ^14.13 || >=16.0.0}
-    dev: true
 
   /chokidar@3.6.0:
     resolution: {integrity: sha512-7VT13fmjotKpGipCW9JEQAusEPE+Ei8nl6/g4FBAmIm0GOOLMua9NDDo/DWp0ZAxCr3cPq5ZpBqmPAQgDda2Pw==}
@@ -2049,14 +2048,15 @@ packages:
     resolution: {integrity: sha512-6DmOs5r7ERDbvS4q8yLKENcj6Yecr7QQTqWApbZdfAUTEC947d+PEha7PCqhm//9oxaLYL7TWRekwhoXl2s6fg==}
     engines: {node: '>=16.0.0', npm: '>=7.0.0'}
 
-  /itk-wasm@1.0.0-b.165:
-    resolution: {integrity: sha512-Rq0+AL2BuRqcFh9r3h69pB3nt84tw/gTxnI6GjIOYw5Bfah9qO+C8hRJpD8aWNBa5o3wNHRAMVlp0pt/L4K8gg==}
+  /itk-wasm@1.0.0-b.173:
+    resolution: {integrity: sha512-SV2lfZ1mClWuSK/noaZgGj9jhroY4MZu19ci9pIucuyhoGdXrVSmWlPH/JYMDi9RP3BogmQwe9wfFc3X1dcEPg==}
     hasBin: true
     dependencies:
       '@itk-wasm/dam': 1.1.1
       '@thewtex/zstddec': 0.2.0
       '@types/emscripten': 1.39.10
       axios: 1.6.7
+      chalk: 5.3.0
       comlink: 4.4.1
       commander: 11.1.0
       fs-extra: 11.2.0
@@ -2066,26 +2066,6 @@ packages:
       wasm-feature-detect: 1.6.1
     transitivePeerDependencies:
       - debug
-    dev: false
-
-  /itk-wasm@1.0.0-b.166:
-    resolution: {integrity: sha512-BZZvgUyTT+4DpiLkS7Hahbt+CpR63ckTgyE8li3d6gg3ljqBXfHDavWLiuUIaTA7RXuPUnpIl23jB9z6v77ymA==}
-    hasBin: true
-    dependencies:
-      '@itk-wasm/dam': 1.1.1
-      '@thewtex/zstddec': 0.2.0
-      '@types/emscripten': 1.39.10
-      axios: 1.6.7
-      comlink: 4.4.1
-      commander: 11.1.0
-      fs-extra: 11.2.0
-      glob: 8.1.0
-      markdown-table: 3.0.3
-      mime-types: 2.1.35
-      wasm-feature-detect: 1.6.1
-    transitivePeerDependencies:
-      - debug
-    dev: true
 
   /js-sha3@0.8.0:
     resolution: {integrity: sha512-gF1cRrHhIzNfToc802P800N8PpXS+evLLXfsVpowqmAFR9uwbi89WvXg2QspOmXL8QL86J4T1EpFu+yUkwJY3Q==}
