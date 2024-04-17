@@ -121,5 +121,5 @@ main( int argc, char* argv[] )
 {
   itk::wasm::Pipeline pipeline( "morphological-contour-interpolation", "Interpolates contours between slices.", argc, argv );
 
-  return itk::wasm::SupportInputImageTypes< PipelineFunctor, uint8_t, int8_t, uint16_t, int16_t, uint32_t, int32_t, uint64_t, int64_t >::Dimensions< 3U >( "input-image", pipeline );
+  return itk::wasm::SupportInputImageTypes< PipelineFunctor, uint8_t, int8_t, uint16_t, int16_t, uint32_t, int32_t, uint64_t, int64_t >::Dimensions< 3U, 4U >( "input-image", pipeline );
 }
