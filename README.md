@@ -72,6 +72,6 @@ This software is distributed under the Apache 2.0 license. Please see the *LICEN
 
 This work is supported by NIH grant R01 EB014346, "Continued development and maintenance of the ITK-SNAP 3D image segmentation software."
 
-[`Live API Demo`]: https://kitwaremedical.github.io/ITKMorphologicalContourInterpolation/ts/app/
-[`Wasm Python Documentation`]: https://kitwaremedical.github.io/ITKMorphologicalContourInterpolation/py/docs/
-[`JavaScript Documentation`]: https://kitwaremedical.github.io/ITKMorphologicalContourInterpolation/ts/docs/
+[`Live API Demo`]: https://kitwaremedical.github.io/ITKContourInterpolation/ts/app/
+[`Wasm Python Documentation`]: https://kitwaremedical.github.io/ITKContourInterpolation/py/docs/
+[`JavaScript Documentation`]: https://kitwaremedical.github.io/ITKContourInterpolation/ts/docs/
