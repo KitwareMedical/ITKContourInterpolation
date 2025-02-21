@@ -10,6 +10,7 @@ readme = "README.md"
 license = {file = "LICENSE"}
 authors = [
     { name = "Dženan Zukić", email = "community@itk.org" },
+    { name = "Matt McCormick", email = "matt@mmmccormick.com" },
 ]
 keywords = [
     "itk",
