@@ -255,8 +255,8 @@ MorphologicalContourInterpolator< TImage >::Dilate1( typename BoolSliceType::Poi
   thread_local bool                              initialized = false;
   thread_local typename CrossDilateType::Pointer crossDilator = CrossDilateType::New();
   thread_local typename BallDilateType::Pointer  ballDilator = BallDilateType::New();
-  thread_local CrossStructuringElementType crossStructuringElement;
-  thread_local BallStructuringElementType ballStructuringElement;
+  thread_local CrossStructuringElementType       crossStructuringElement;
+  thread_local BallStructuringElementType        ballStructuringElement;
   using AndFilterType = AndImageFilter< BoolSliceType, BoolSliceType, BoolSliceType >;
   thread_local typename AndFilterType::Pointer andFilter = AndFilterType::New();
 
@@ -1309,7 +1309,7 @@ MorphologicalContourInterpolator< TImage >::InterpolateBetweenTwo( int axis, TIm
           --iCounts[p->first];
           --jCounts[p->second];
           pairs.erase( p++ );
-        }                                 // M-to-1
+        } // M-to-1
       else if ( jCounts[p->second] == 1 ) // 1-to-N
         {
           for ( auto rest = pairs.begin(); rest != pairs.end(); ++rest )
@@ -1537,7 +1537,7 @@ MorphologicalContourInterpolator< TImage >::GenerateData()
               this->InterpolateAlong( a, m_Output, a / float( TImage::ImageDimension ), ( a + 1 ) / float( TImage::ImageDimension ) );
             }
         }
-    }  // interpolate along all axes
+    } // interpolate along all axes
   else // interpolate along the specified axis
     {
       this->InterpolateAlong( m_Axis, m_Output, 0.0f, 1.0f );
