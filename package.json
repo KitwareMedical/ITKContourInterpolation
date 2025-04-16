@@ -1,6 +1,6 @@
 {
   "name": "@itk-wasm/morphological-contour-interpolation-build",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "npm scripts to generate itk-wasm artifacts.",
   "private": true,
   "type": "module",
