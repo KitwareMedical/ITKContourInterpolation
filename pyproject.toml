@@ -4,7 +4,7 @@ build-backend = "scikit_build_core.build"
 
 [project]
 name = "itk-morphologicalcontourinterpolation"
-version = "2.1.0"
+version = "2.1.1"
 description = "A morphology-based approach for interslice interpolation of anatomical slices from volumetric images."
 readme = "README.md"
 license = {file = "LICENSE"}
@@ -33,7 +33,7 @@ classifiers = [
     "Topic :: Scientific/Engineering :: Medical Science Apps.",
     "Topic :: Software Development :: Libraries",
 ]
-requires-python = ">=3.8"
+requires-python = ">=3.9"
 dependencies = [
     "itk == 5.4.*",
 ]
