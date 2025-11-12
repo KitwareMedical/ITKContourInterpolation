@@ -4,7 +4,7 @@ build-backend = "scikit_build_core.build"
 
 [project]
 name = "itk-morphologicalcontourinterpolation"
-version = "2.1.1"
+version = "2.1.2"
 description = "A morphology-based approach for interslice interpolation of anatomical slices from volumetric images."
 readme = "README.md"
 license = {file = "LICENSE"}
@@ -14,6 +14,7 @@ authors = [
 ]
 keywords = [
     "itk",
+    "InsightToolkit",
 ]
 classifiers = [
     "Development Status :: 4 - Beta",
@@ -46,7 +47,7 @@ Homepage = "https://github.com/KitwareMedical/ITKContourInterpolation"
 # The versions of CMake to allow. If CMake is not present on the system or does
 # not pass this specifier, it will be downloaded via PyPI if possible. An empty
 # string will disable this check.
-cmake.version = ">=3.16.3"
+cmake.version = ">=3.22.1"
 
 # A list of args to pass to CMake when configuring the project. Setting this in
 # config or envvar will override toml. See also ``cmake.define``.
