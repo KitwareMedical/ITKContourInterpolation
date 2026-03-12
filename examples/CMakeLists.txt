@@ -9,10 +9,9 @@ else()
   # lists of modules are not yet ready, causing a configure error
   find_package(ITK REQUIRED COMPONENTS MorphologicalContourInterpolation ITKSmoothing ITKIOImageBase ITKIONRRD ITKTestKernel)
 endif()
-include(${ITK_USE_FILE})
 
 add_executable(mciExample mciExample.cxx)
-target_link_libraries(mciExample ${ITK_LIBRARIES})
+target_link_libraries(mciExample ${ITK_INTERFACE_LIBRARIES})
 
 
 # add some regression tests
