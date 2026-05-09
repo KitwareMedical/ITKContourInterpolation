@@ -1,3 +1,19 @@
+# Migrated to ITK main
+
+As of 2026-05-07, the `MorphologicalContourInterpolation` module
+has been ingested into the main ITK repository at
+[`Modules/Filtering/MorphologicalContourInterpolation`](https://github.com/InsightSoftwareConsortium/ITK/tree/main/Modules/Filtering/MorphologicalContourInterpolation)
+and the standalone remote module is no longer maintained here.
+
+- **In-tree home:** <https://github.com/InsightSoftwareConsortium/ITK/tree/main/Modules/Filtering/MorphologicalContourInterpolation>
+- **Ingest PR:** [InsightSoftwareConsortium/ITK#6209](https://github.com/InsightSoftwareConsortium/ITK/pull/6209)
+
+Please file new issues and pull requests against the in-tree module.
+
+---
+
+## Original module description
+
 # ITKMorphologicalContourInterpolation
 
 ![Build, test, package](https://github.com/KitwareMedical/ITKMorphologicalContourInterpolation/workflows/Build,%20test,%20package/badge.svg)
