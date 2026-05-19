@@ -1,14 +1,14 @@
 # Migrated to ITK main
 
-As of 2026-05-07, the `MorphologicalContourInterpolation` module
-has been ingested into the main ITK repository at
-[`Modules/Filtering/MorphologicalContourInterpolation`](https://github.com/InsightSoftwareConsortium/ITK/tree/main/Modules/Filtering/MorphologicalContourInterpolation)
-and the standalone remote module is no longer maintained here.
+The `MorphologicalContourInterpolation` module has been ingested into the Insight Toolkit (ITK) main repository and is no longer maintained here.
 
-- **In-tree home:** <https://github.com/InsightSoftwareConsortium/ITK/tree/main/Modules/Filtering/MorphologicalContourInterpolation>
+- **In-tree location:** [`Modules/Filtering/MorphologicalContourInterpolation`](https://github.com/InsightSoftwareConsortium/ITK/tree/main/Modules/Filtering/MorphologicalContourInterpolation)
 - **Ingest PR:** [InsightSoftwareConsortium/ITK#6209](https://github.com/InsightSoftwareConsortium/ITK/pull/6209)
+- **Merge commit:** [`bf2088d6a3`](https://github.com/InsightSoftwareConsortium/ITK/commit/bf2088d6a3d41c908d0eea99f2ee05bb7d11a259)
 
-Please file new issues and pull requests against the in-tree module.
+Future development, bug fixes, and pull requests should target ITK main. This repository's history is preserved for `git blame` and archival reference.
+
+**Maintainer action:** please mark this repository **Archived** under repo Settings -> Danger Zone after merging this PR. See the [ITK ingestion strategy](https://github.com/InsightSoftwareConsortium/ITK/blob/main/Utilities/Maintenance/RemoteModuleIngest/INGESTION_STRATEGY.md) for context.
 
 ---
 
